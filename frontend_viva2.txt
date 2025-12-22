@@ -1,0 +1,68 @@
+1) Objective of the frontend  
+Offer an authenticated React UI where users can explore ISRO satellites, predict passes from their location, watch live tracks on maps, view visibility over India, consume learning content, and send feedback with a polished glassmorphism experience.
+
+2) Frontend technologies and why  
+- Vite + React (fast dev/build, component model).  
+- React Router (page navigation + protected routes).  
+- Axios (simplified REST calls with baseURL + interceptors).  
+- React Leaflet + Leaflet (map rendering, markers, polylines, circles).  
+- Framer Motion (animated transitions, cards, navbar interactions).  
+- Tailwind CSS (utility-first styling for the glass/gradient look).  
+- i18next (English/Hindi localization).  
+- React Icons (quick iconography).
+
+3) Where and how React is used  
+All UI is React components: context for auth (`AuthProvider`), route-level pages (Home, SatelliteList, MapView, etc.), reusable cards/buttons/stat blocks, and UI wrappers (KrissCrossBackground). State hooks manage form inputs, API data, geolocation, and polling.
+
+4) Routing handling  
+`App.jsx` defines routes with `Routes/Route`; public routes are `/login` and `/signup`. Everything else is wrapped with `PrivateRoute` to require auth. `NavBar` uses `NavLink` for navigation and highlights active paths; 404 falls back to a simple message.
+
+5) Authentication state management  
+`AuthContext` keeps `user`, `token`, and `loading`. It reads token from localStorage, sets axios Authorization header, calls `/auth/me` to hydrate the user, and exposes `login`, `signup`, `logout`, and `isAuthenticated`.
+
+6) Protected routes  
+`PrivateRoute` checks `isAuthenticated`; while loading it renders nothing, and if unauthenticated it redirects to `/login`. Wrapped routes render children when authenticated.
+
+7) Data fetching from backend  
+Axios instance in `services/api.js` (base URL from `VITE_API_BASE_URL`) performs GET/POST calls. Examples: Home and SatelliteList call `/satellites`; Home/SatelliteDetails call `/predict`; MapView polls `/position/:id`; Feedback posts to `/feedback`; auth pages hit `/auth/login` and `/auth/signup`.
+
+8) Real-time satellite data on UI  
+MapView uses `useEffect` + `setInterval` to poll `/position/:id` every 5 seconds for the selected satellite, updating position, orbit path, visibility flags, and a breadcrumb trail for heatmap rendering. Another interval (30s) fetches a watchlist to show satellites currently over India with next-pass info.
+
+9) UI/UX design choices (glassmorphism, animations, layout)  
+Tailwind classes plus custom CSS (`index.css`) create glass cards (blur, translucent borders), gradients, and glowing backgrounds. `KrissCrossBackground` adds animated grid/lines/orbs. Cards and headers use rounded corners, shadows, and gradient accents. Layouts use responsive grids with generous spacing for readability.
+
+10) Role of Framer Motion  
+Provides entrance/exit animations for route transitions, navbar dropdowns, cards, buttons, loaders, and background effects, making interactions smooth without custom animation code.
+
+11) Map integration and shown data  
+React Leaflet renders `MapContainer` with dark Carto tiles. It plots the current satellite marker (custom SVG icon), orbit polyline, dynamic footprint circle, and optional heatmap trail. A side map highlights India bounds and markers for satellites currently visible over India, with popups showing altitude/elevation/best city when available.
+
+12) Error handling and loading states  
+Components track `loading`/`error` state. Skeletons and loaders appear while fetching (SatelliteList, MapView). Errors render friendly messages via `ErrorState` or inline text (e.g., Home prediction failure, Feedback toast). Buttons show spinners when submitting. Geolocation failures set explicit error strings.
+
+13) Images and static assets management  
+Local assets (logos, fallback satellite SVG/WEBP) live in `src/assets` and are used in cards with onError fallbacks. External satellite images come from backend data; fallback SVG displays if loading fails.
+
+14) UX improvements  
+Auto-detects user geolocation for predictions, preselects the first satellite, remembers auth token, supports Hindi/English toggle, provides animated feedback to interactions, and uses clear CTA buttons and cards for scannable info.
+
+15) Real-world usefulness  
+Lets operators/students see which ISRO satellites are overhead, plan passes with weather grading, visualize orbits over India, and explore learning/disaster/self-reliance content—all without handling raw TLEs or command-line tools.
+
+16) Current frontend limitations  
+No offline mode; relies on polling (no WebSockets); limited form validation; static content for learning and self-reliance; small satellite catalog; no role-based UI differences; map updates depend on backend availability.
+
+17) Future improvements  
+Add WebSocket/SSE live feeds, offline caching, richer filters/search, broader catalog, push notifications for upcoming passes, better form validation, accessibility passes, and map overlays (footprints, multi-sat comparisons).
+
+Common Viva Questions & Answers  
+- Characteristics: Vite/React SPA with protected routes, bilingual UI, glass/gradient styling, animated transitions, map-based live tracking, and REST-driven data flow.  
+- Key features: Auth + session restore, satellite catalog/cards, pass prediction table with weather scoring, live map with orbit/footprint/visibility, India-overhead watchlist, learning and disaster/self-reliance sections, feedback form.  
+- Real-life applications: Field teams or hobbyists checking ISRO passes, classrooms demonstrating orbits/visibility, quick situational awareness for India-focused monitoring.  
+- Why important: Makes indigenous satellite awareness accessible visually, reducing friction of parsing TLEs and manual calculations.  
+- Problem solved: Turns complex orbital data into clear visuals (maps, tables) with minimal user input (location + pick satellite).  
+- Difference from existing systems: Tailored to ISRO satellites with India visibility emphasis, weather-graded predictions, and bilingual glassmorphism UI instead of generic satellite trackers.  
+- What makes it unique: Combined geolocation-based prediction, India-centric visibility highlights, animated glass UI, and curated ISRO learning/disaster content in one app.  
+- Future scope: WebSocket live updates, richer analytics overlays, alerts/notifications, offline-first PWA, and more accessible forms/ARIA improvements.
+

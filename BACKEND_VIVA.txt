@@ -1,0 +1,768 @@
+================================================================================
+BACKEND VIVA DOCUMENTATION - ISRO SATELLITE PASS PREDICTOR
+================================================================================
+
+1. BACKEND STACK USED
+================================================================================
+
+In this project, I used the following backend technologies:
+
+- Node.js: JavaScript runtime environment
+- Express.js 5.1.0: Web application framework for building REST APIs
+- MongoDB: NoSQL database for storing satellite and user data
+- Mongoose 8.20.0: MongoDB object modeling library (ODM)
+- JWT (jsonwebtoken 9.0.2): For authentication tokens
+- bcrypt 6.0.0: For password hashing
+- tle.js 5.0.1: Library for Two-Line Element (TLE) satellite calculations
+- suncalc 1.9.0: Library for sun position calculations
+- node-fetch 2.6.7: For making HTTP requests to external APIs (CelesTrak, OpenWeather)
+- node-cron 4.2.1: For scheduling background jobs (TLE refresh)
+- express-validator 7.3.1: For request validation
+- cors 2.8.5: For Cross-Origin Resource Sharing
+- dotenv 17.2.3: For environment variable management
+
+All dependencies are listed in backend/package.json.
+
+
+2. WHY NODE.JS + EXPRESS WAS CHOSEN
+================================================================================
+
+I chose Node.js + Express for this project because:
+
+1. JavaScript Ecosystem: Frontend is React (JavaScript), so using Node.js allows 
+   code sharing and same language across stack. Developers only need to know JavaScript.
+
+2. Real-time Requirements: The project needs to calculate satellite positions in 
+   real-time. Node.js's event-driven, non-blocking I/O is perfect for handling 
+   multiple concurrent requests for position calculations.
+
+3. TLE.js Library: The tle.js library for satellite calculations is a Node.js 
+   package. Using Node.js allows direct integration without API wrappers.
+
+4. Express Simplicity: Express provides minimal, flexible framework. Easy to set 
+   up routes, middleware, and handle JSON requests/responses.
+
+5. MongoDB Integration: Mongoose (MongoDB ODM) works seamlessly with Node.js. 
+   The async/await pattern fits well with database operations.
+
+6. Background Jobs: node-cron integrates easily with Node.js for scheduling TLE 
+   refresh jobs.
+
+7. Performance: Node.js handles I/O-bound operations (database queries, external 
+   API calls) efficiently, which is perfect for this API server.
+
+
+3. ENTRY POINT AND EXECUTION FLOW
+================================================================================
+
+ENTRY POINT: backend/server.js
+
+EXECUTION FLOW:
+
+1. server.js starts:
+   - Loads environment variables: dotenv.config()
+   - Imports database connection: require('./config/db')
+   - Imports seed helper: require('./utils/seedHelper')
+   - Imports TLE refresh: require('./utils/tleRefresh')
+   - Imports Express app: require('./app')
+
+2. startServer() async function:
+   a. Connects to MongoDB: await connectDB()
+      - Reads MONGO_URI from environment
+      - Connects using Mongoose
+      - Logs "MongoDB connected"
+   
+   b. Seeds satellite data: await ensureSeedData()
+      - Reads satellite data from data/isroSatellites.js
+      - Inserts/updates satellites in database
+      - Deletes obsolete satellites
+      - Logs insertion/update counts
+   
+   c. Schedules TLE refresh: scheduleTleRefresh()
+      - Runs immediately on startup
+      - Schedules daily refresh at 02:00 IST using node-cron
+      - Only runs if NODE_ENV !== 'test' (skipped in tests)
+   
+   d. Starts Express server: app.listen(PORT)
+      - Default port: 5000 (from process.env.PORT)
+      - Logs "Backend running on port 5000"
+
+3. app.js (Express application):
+   - Sets up CORS middleware
+   - Sets up JSON body parser
+   - Defines /api/health endpoint
+   - Mounts route handlers:
+     * /api/satellites → satelliteRoutes
+     * /api/satellites/telemetry → telemetryRoutes
+     * /api → predictionRoutes
+     * /api/feedback → feedbackRoutes
+     * /api/auth → authRoutes
+
+4. Request Flow:
+   - Request arrives → CORS check → JSON parsing → Route matching → Controller → Response
+
+
+4. FOLDER STRUCTURE AND PURPOSE
+================================================================================
+
+backend/
+├── server.js                    # Entry point - starts server
+├── app.js                       # Express app configuration
+├── package.json                 # Dependencies
+│
+├── config/
+│   └── db.js                    # MongoDB connection logic
+│
+├── routes/                      # Route definitions (URL → Controller mapping)
+│   ├── authRoutes.js           # /api/auth/* routes
+│   ├── satelliteRoutes.js      # /api/satellites/* routes
+│   ├── predictionRoutes.js      # /api/predict, /api/position/* routes
+│   ├── feedbackRoutes.js       # /api/feedback/* routes
+│   └── telemetryRoutes.js      # /api/satellites/telemetry/* routes
+│
+├── controllers/                 # Business logic (what happens on each route)
+│   ├── authController.js       # Login, signup, user verification
+│   ├── satelliteController.js  # Get satellites list/details
+│   ├── predictionController.js # Pass prediction, real-time position
+│   ├── feedbackController.js   # Submit/get feedback
+│   └── telemetryController.js  # Generate satellite telemetry data
+│
+├── models/                      # Mongoose schemas (database structure)
+│   ├── User.js                 # User schema (email, passwordHash, name)
+│   ├── Satellite.js            # Satellite schema (name, norad_id, TLE, etc.)
+│   └── Feedback.js             # Feedback schema (name, email, message, rating)
+│
+├── utils/                       # Helper functions and utilities
+│   ├── authMiddleware.js       # JWT token verification middleware
+│   ├── tleHelper.js           # TLE calculations (position, orbit, pass)
+│   ├── visibilityHelper.js     # India visibility checks
+│   ├── tleRefresh.js          # TLE data refresh from CelesTrak
+│   ├── seedHelper.js          # Database seeding logic
+│   └── observers.js            # Indian city observer coordinates
+│
+├── data/                        # Static data files
+│   ├── isroSatellites.js       # Initial satellite data with TLE
+│   └── indiaPolygon.json       # GeoJSON polygon of India borders
+│
+├── tests/                       # Test files
+│   ├── setup.js                # Test database setup
+│   └── api.test.js             # API endpoint tests
+│
+└── env.example                  # Environment variable template
+
+ARCHITECTURE PATTERN:
+- MVC-like structure: Routes → Controllers → Models
+- Separation of concerns: Business logic in controllers, data access in models
+- Reusable utilities in utils/ folder
+- Static data separated from code
+
+
+5. MONGODB USAGE
+================================================================================
+
+DATABASE NAME:
+- Database name is determined by MongoDB connection string (MONGO_URI)
+- Typically uses the database name specified in the connection string
+- Example: mongodb://user:pass@host:port/database_name
+
+COLLECTIONS USED:
+The project uses three MongoDB collections (automatically created by Mongoose):
+
+1. users (from models/User.js):
+   - Stores user accounts
+   - Fields: email (unique), passwordHash, name, createdAt
+   - Indexed on email for fast lookups
+
+2. satellites (from models/Satellite.js):
+   - Stores ISRO satellite data
+   - Fields: name, norad_id (unique), mission, purpose, launch_year, 
+     image_url, tle_line1, tle_line2, tle_updated_at, timestamps
+   - Indexed on norad_id for fast lookups
+
+3. feedbacks (from models/Feedback.js):
+   - Stores user feedback
+   - Fields: name, email, message, rating (1-5), timestamps
+   - No unique constraints
+
+SCHEMA DESIGN:
+
+User Schema (models/User.js):
+- email: String, required, unique, lowercase, trimmed
+- passwordHash: String, required (hashed with bcrypt)
+- name: String, default empty string
+- createdAt: Date, default Date.now
+
+Satellite Schema (models/Satellite.js):
+- name: String, required
+- norad_id: Number, required, unique (NORAD catalog ID)
+- mission: String (optional)
+- purpose: String (optional)
+- launch_year: Number (optional)
+- image_url: String (optional, URL to satellite image)
+- tle_line1: String, required (TLE line 1)
+- tle_line2: String, required (TLE line 2)
+- tle_updated_at: Date, default Date.now
+- timestamps: true (adds createdAt, updatedAt automatically)
+
+Feedback Schema (models/Feedback.js):
+- name: String, required
+- email: String, required
+- message: String, required
+- rating: Number, required, min: 1, max: 5
+- timestamps: true (adds createdAt, updatedAt automatically)
+
+WHY MONGODB:
+- Flexible schema: Easy to add new satellite fields
+- JSON-like documents: Matches JavaScript objects naturally
+- Good for read-heavy workloads (satellite data is mostly read)
+- Easy integration with Node.js via Mongoose
+
+
+6. AUTHENTICATION SYSTEM
+================================================================================
+
+SIGNUP FLOW (controllers/authController.js):
+
+1. Request arrives at POST /api/auth/signup
+2. express-validator validates:
+   - email: Must be valid email format
+   - password: Must be 6+ characters
+3. Controller checks if email already exists:
+   - User.findOne({ email })
+   - If exists: Returns 409 Conflict
+4. Password hashing:
+   - bcrypt.hash(password, 10) - 10 salt rounds
+   - Creates passwordHash string
+5. User creation:
+   - new User({ email, passwordHash, name })
+   - await user.save()
+6. JWT generation:
+   - jwt.sign({ id: user._id, email }, JWT_SECRET, { expiresIn: '7d' })
+   - Token expires in 7 days
+7. Response:
+   - Returns { token, user: { id, email, name } }
+
+LOGIN FLOW (controllers/authController.js):
+
+1. Request arrives at POST /api/auth/login
+2. Controller finds user by email:
+   - User.findOne({ email })
+   - If not found: Returns 401 Unauthorized
+3. Password verification:
+   - bcrypt.compare(password, user.passwordHash)
+   - Returns true if password matches
+   - If false: Returns 401 Unauthorized
+4. JWT generation:
+   - Same as signup: jwt.sign({ id, email }, JWT_SECRET, { expiresIn: '7d' })
+5. Response:
+   - Returns { token, user: { id, email, name } }
+
+PASSWORD HASHING (bcrypt):
+- Why bcrypt: Industry standard, slow by design (prevents brute force)
+- Salt rounds: 10 (balance between security and performance)
+- One-way hashing: Cannot reverse to get original password
+- Comparison: bcrypt.compare() hashes input and compares hashes
+
+JWT GENERATION AND VERIFICATION:
+
+Generation (authController.js):
+- Payload: { id: user._id, email: user.email }
+- Secret: JWT_SECRET from environment variables
+- Expiration: 7 days (configurable via JWT_EXPIRES_IN)
+- Algorithm: HS256 (default)
+
+Verification (utils/authMiddleware.js):
+1. Extracts token from:
+   - Authorization header: "Bearer <token>"
+   - OR x-access-token header
+2. Verifies token:
+   - jwt.verify(token, JWT_SECRET)
+   - If invalid/expired: Returns 401 Unauthorized
+3. Attaches user to request:
+   - req.user = { id: decoded.id, email: decoded.email }
+4. Calls next() to continue to controller
+
+Protected Routes:
+- Routes that need authentication use authMiddleware
+- Example: router.get('/me', authMiddleware, me)
+- Middleware runs before controller, verifies token
+
+
+7. MIDDLEWARE
+================================================================================
+
+AUTH MIDDLEWARE (utils/authMiddleware.js):
+
+Purpose: Verify JWT token before allowing access to protected routes
+
+How it works:
+1. Extracts token from request headers
+2. Verifies token using JWT_SECRET
+3. If valid: Attaches user info to req.user, calls next()
+4. If invalid: Returns 401 Unauthorized
+
+Usage:
+- Applied to routes in authRoutes.js: router.get('/me', authMiddleware, me)
+- Can be applied to any route that needs authentication
+
+CORS (app.js):
+
+Purpose: Allow frontend (different origin) to make API requests
+
+Configuration:
+- Reads CLIENT_URL from environment (comma-separated allowed origins)
+- Supports wildcard '*' for development
+- Checks origin in request headers
+- Allows request if origin matches or '*' is set
+
+Why needed:
+- Frontend runs on http://localhost:5173 (Vite dev server)
+- Backend runs on http://localhost:5000
+- Different origins = CORS required
+
+JSON PARSING (app.js):
+
+Purpose: Parse JSON request bodies
+
+Configuration:
+- app.use(express.json())
+- Automatically parses Content-Type: application/json
+- Makes req.body available as JavaScript object
+
+Why needed:
+- API receives JSON in request body (login, signup, predict, feedback)
+- Without this, req.body would be undefined
+
+
+8. SATELLITE TRACKING LOGIC
+================================================================================
+
+TLE USAGE (utils/tleHelper.js):
+
+TLE (Two-Line Element) Format:
+- TLE is standard format for satellite orbital elements
+- Two lines of text containing orbital parameters
+- Stored in database: tle_line1 and tle_line2
+- Example format:
+  Line 1: "1 43111U 18004A   25332.19249595  .00001165  00000+0  58427-4 0  9994"
+  Line 2: "2 43111  97.4340  30.0638 0000769 229.2981 130.8187 15.19277789436810"
+
+TLE.js Library:
+- tle.getLatLngObj(tleString, timestamp) - Gets lat/lng at specific time
+- tle.getSatelliteInfo(tleString, timestamp, observerLat, observerLon, altitude) 
+  - Gets elevation, azimuth, range, height from observer's perspective
+
+ORBIT CALCULATION (utils/tleHelper.js):
+
+getCurrentPosition(satellite):
+1. Builds TLE string from satellite.tle_line1 and tle_line2
+2. Gets current timestamp: new Date()
+3. Calls tle.getLatLngObj() to get latitude/longitude
+4. Gets altitude using tle.getSatelliteInfo() with observer at Earth center (0,0,0)
+5. Validates altitude (100-60000 km range for LEO/GEO)
+6. Returns: { latitude, longitude, altitudeKm, timestamp }
+
+getOrbitTrack(satellite):
+1. Skips Lagrange point satellites (Aditya-L1 doesn't orbit Earth)
+2. Samples positions over one orbit period (~100 minutes)
+3. Samples every 60 seconds
+4. Normalizes longitude across anti-meridian (-180/180 boundary)
+5. Returns array of { latitude, longitude } points
+
+computeNextPass(satellite, lat, lon):
+1. Scans forward 6 hours in 30-second steps
+2. For each timestamp, calculates elevation from observer location
+3. Finds when elevation > 0 (satellite above horizon)
+4. Tracks pass start, end, and maximum elevation
+5. Determines day/night using suncalc library
+6. Returns: { startTime, endTime, durationSeconds, maxElevation, dayNight }
+
+VISIBILITY LOGIC (utils/visibilityHelper.js):
+
+isVisibleFromIndia(satellite, satellitePosition):
+Uses hybrid model with three checks:
+
+1. Elevation-based:
+   - Calculates elevation from India center (22.0°N, 78.0°E)
+   - If elevation > 0: Satellite is above horizon
+
+2. City observer check:
+   - Checks 6 Indian cities: Delhi, Mumbai, Chennai, Bengaluru, Kolkata, Nagpur
+   - If ANY city sees elevation > 0: Satellite is visible
+
+3. Polygon containment:
+   - Uses ray-casting algorithm
+   - Checks if satellite position (lat/lon) is inside India polygon
+   - Polygon data from data/indiaPolygon.json (GeoJSON format)
+
+Final result: visible = elevationVisible OR cityVisible OR inIndiaPolygon
+
+getNextPass(satellite, lookaheadMinutes):
+- Scans forward in time (default 60 minutes)
+- Checks all city observers at each timestamp
+- Finds best pass (highest elevation)
+- Returns pass details with best observer location
+
+
+9. API ENDPOINTS
+================================================================================
+
+SATELLITES:
+
+GET /api/satellites
+- Controller: satelliteController.getSatellites
+- Returns: Array of all satellites with valid TLE data
+- Response format: [{ id, name, norad_id, mission, purpose, launch_year, 
+                      image_url, tle_age_hours, tle_status }, ...]
+- Filters: Only returns satellites with tle_line1 and tle_line2
+- Sorted by: name (ascending)
+
+GET /api/satellites/:id
+- Controller: satelliteController.getSatelliteDetails
+- Parameters: id (MongoDB _id or norad_id)
+- Returns: Single satellite object
+- Response format: { id, name, norad_id, mission, purpose, launch_year, 
+                     image_url, tle_age_hours, tle_status, timestamp }
+
+POSITION:
+
+GET /api/position/:satId
+- Controller: predictionController.getRealtimePosition
+- Parameters: satId (MongoDB _id, norad_id, or name)
+- Query params: lookaheadMinutes (optional, for next pass)
+- Returns: Current satellite position and orbit track
+- Response format: {
+    satellite: { id, name, norad_id, ... },
+    currentPosition: { latitude, longitude, altitudeKm, timestamp },
+    orbitPath: [{ latitude, longitude }, ...],
+    is_visible_from_india: boolean,
+    visibility_details: { elevationVisible, centerElevation, cityVisible, ... },
+    next_pass: { startTime, endTime, maxElevationDeg, ... } (if requested),
+    timestamp: ISO string,
+    cached: boolean
+  }
+- Caching: 5-second cache to prevent redundant calculations
+
+PREDICTION:
+
+POST /api/predict
+- Controller: predictionController.predictSatellitePass
+- Body: { lat: number, lon: number, satelliteId: string }
+- Returns: Next satellite pass prediction with weather
+- Response format: {
+    satellite: { id, name, ... },
+    location: { lat, lon },
+    prediction: {
+      startTime: ISO string,
+      endTime: ISO string,
+      durationSeconds: number,
+      durationMinutes: number,
+      maxElevation: number,
+      dayNight: "Daylight" | "Night",
+      visibilityScore: "Good" | "Average" | "Poor"
+    },
+    weather: {
+      visibilityScore: string,
+      source: string,
+      temperature: number | null,
+      raw: object | null
+    },
+    timestamp: ISO string
+  }
+- Weather: Fetched from OpenWeather API using OPENWEATHER_API_KEY
+
+FEEDBACK:
+
+POST /api/feedback
+- Controller: feedbackController.submitFeedback
+- Body: { name: string, email: string, message: string, rating: number (1-5) }
+- Returns: { message: "Feedback received", data: feedbackObject }
+- Status: 201 Created
+
+GET /api/feedback
+- Controller: feedbackController.getFeedback
+- Returns: Array of recent feedback (last 50, sorted by newest first)
+- Response format: [{ name, email, message, rating, createdAt, updatedAt }, ...]
+
+AUTH:
+
+POST /api/auth/signup
+- Controller: authController.signup
+- Body: { name: string, email: string, password: string }
+- Validation: email format, password 6+ chars
+- Returns: { token: JWT string, user: { id, email, name } }
+
+POST /api/auth/login
+- Controller: authController.login
+- Body: { email: string, password: string }
+- Returns: { token: JWT string, user: { id, email, name } }
+
+GET /api/auth/me
+- Controller: authController.me
+- Middleware: authMiddleware (requires valid token)
+- Returns: { user: { id, email, name, createdAt } }
+
+HEALTH:
+
+GET /api/health
+- Defined in app.js
+- Returns: { status: "ok", uptime: seconds, timestamp: ISO string }
+- No authentication required
+
+
+10. BACKGROUND JOBS
+================================================================================
+
+TLE REFRESH (utils/tleRefresh.js):
+
+Purpose: Keep satellite TLE data up-to-date (TLEs change as orbits decay)
+
+How it works:
+1. Scheduled using node-cron
+2. Runs immediately on server startup
+3. Then runs daily at 02:00 IST (Asia/Kolkata timezone)
+4. Cron expression: '0 2 * * *' (2 AM every day)
+
+Refresh Process:
+1. Fetches TLE data from CelesTrak API:
+   - Bulk fetch: https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle
+   - Individual fetch: https://celestrak.org/NORAD/elements/gp.php?CATNR={norad_id}&FORMAT=TLE
+2. Parses TLE text format into Map<noradId, {tle_line1, tle_line2}>
+3. Gets all satellites from database
+4. For each satellite:
+   - Tries to get TLE from bulk fetch first
+   - Falls back to individual fetch if not found
+   - Updates satellite.tle_line1, tle_line2, tle_updated_at
+   - Saves to database
+5. Logs results: Updated count, skipped count, error count
+
+Error Handling:
+- Retry logic: 3 attempts with exponential backoff
+- Individual satellite failures don't stop entire refresh
+- Errors logged but don't crash server
+
+Rate Limiting:
+- 500ms delay between individual satellite fetches
+- Prevents overwhelming CelesTrak API
+
+SEEDING LOGIC (utils/seedHelper.js):
+
+Purpose: Initialize database with ISRO satellite data on first run
+
+How it works:
+1. Called in server.js: await ensureSeedData()
+2. Reads satellite data from data/isroSatellites.js
+3. Deletes obsolete satellites:
+   - Finds satellites not in seed data
+   - Deletes them from database
+4. Upserts satellites:
+   - For each satellite in seed data:
+     - Finds existing by norad_id
+     - If exists: Updates all fields
+     - If not exists: Creates new document
+   - Uses findOneAndUpdate with upsert: true
+5. Validates TLE data:
+   - Skips satellites without tle_line1 or tle_line2
+   - Logs warnings for missing TLE
+
+Result:
+- Database always has latest satellite list
+- Obsolete satellites removed
+- New satellites added automatically
+
+
+11. ERROR HANDLING STRATEGY
+================================================================================
+
+TRY-CATCH BLOCKS:
+- All async controller functions wrapped in try-catch
+- Catches errors and returns appropriate HTTP status codes
+
+ERROR RESPONSES:
+- 400 Bad Request: Invalid input (missing fields, invalid coordinates)
+- 401 Unauthorized: Invalid/expired token, wrong credentials
+- 404 Not Found: Satellite not found, no pass predicted
+- 409 Conflict: Email already registered
+- 500 Internal Server Error: Server errors, TLE calculation failures
+
+ERROR MESSAGES:
+- User-friendly messages in response: { message: "Error description" }
+- Technical details logged to console for debugging
+- Error stack traces only in development
+
+SPECIFIC ERROR HANDLING:
+
+TLE Errors:
+- Invalid TLE: Returns 400 with message "Satellite missing TLE"
+- Calculation failure: Returns 500 with error message
+- Altitude validation: Returns 400 if altitude out of range (100-60000 km)
+
+API Errors:
+- OpenWeather API failure: Returns "Average" visibility score as fallback
+- CelesTrak API failure: Logs warning, continues with existing TLE data
+
+Database Errors:
+- Connection failure: Server exits with error (prevents serving bad data)
+- Query errors: Caught in try-catch, returns 500
+
+Validation Errors:
+- express-validator returns array of errors: { errors: [...] }
+- Frontend displays validation messages
+
+
+12. SECURITY CONSIDERATIONS
+================================================================================
+
+PASSWORD SECURITY:
+- Passwords never stored in plain text
+- bcrypt hashing with 10 salt rounds
+- Passwords not logged or returned in API responses
+
+JWT SECURITY:
+- Secret key stored in environment variable (JWT_SECRET)
+- Token expires in 7 days (prevents indefinite access)
+- Token verified on every protected request
+- Payload only contains id and email (no sensitive data)
+
+CORS SECURITY:
+- Only allows specified origins (CLIENT_URL)
+- Prevents unauthorized domains from accessing API
+- Wildcard '*' only for development
+
+INPUT VALIDATION:
+- express-validator validates email format and password length
+- Coordinate validation: Checks for valid numbers, not NaN
+- Rating validation: Must be 1-5 (enforced in schema)
+
+SQL INJECTION PREVENTION:
+- Using Mongoose (not raw queries)
+- Mongoose automatically sanitizes inputs
+- No user input directly in database queries
+
+XSS PREVENTION:
+- Backend only returns data (no HTML rendering)
+- Frontend handles XSS prevention (React escapes by default)
+
+ENVIRONMENT VARIABLES:
+- Sensitive data (JWT_SECRET, MONGO_URI, API keys) in .env file
+- .env not committed to version control
+- env.example provided as template
+
+RATE LIMITING:
+- Not implemented (could be added with express-rate-limit)
+- TLE refresh has built-in delays to respect external APIs
+
+
+13. HOW FRONTEND AND BACKEND ARE CONNECTED
+================================================================================
+
+CONNECTION METHOD:
+- REST API over HTTP/HTTPS
+- Frontend makes HTTP requests to backend endpoints
+- Backend responds with JSON data
+
+BASE URL CONFIGURATION:
+- Frontend: VITE_API_BASE_URL environment variable
+- Default: http://localhost:5000/api (development)
+- Production: Set to backend deployment URL
+
+AUTHENTICATION FLOW:
+1. Frontend sends credentials to /api/auth/login
+2. Backend validates and returns JWT token
+3. Frontend stores token in localStorage
+4. Frontend includes token in Authorization header for all requests
+5. Backend middleware (authMiddleware) verifies token
+6. If valid: Request proceeds to controller
+7. If invalid: Returns 401, frontend redirects to login
+
+DATA FLOW EXAMPLE (Satellite Position):
+1. Frontend: MapView.jsx calls api.get('/position/43111')
+2. Axios adds Authorization header automatically
+3. Request sent to: http://localhost:5000/api/position/43111
+4. Backend: predictionController.getRealtimePosition() executes
+5. Backend: Fetches satellite from MongoDB
+6. Backend: Calculates position using tle.js
+7. Backend: Returns JSON: { currentPosition: {...}, orbitPath: [...] }
+8. Frontend: Receives response, updates React state
+9. Frontend: Re-renders map with new position
+
+CORS CONFIGURATION:
+- Backend allows frontend origin via CORS middleware
+- Without CORS, browser would block requests (different origins)
+
+ERROR PROPAGATION:
+- Backend errors returned as JSON: { message: "Error text" }
+- Frontend catches errors in try-catch blocks
+- Error messages displayed to user in UI
+
+
+14. WHAT HAPPENS WHEN AN API REQUEST FAILS
+================================================================================
+
+NETWORK FAILURE:
+- Axios throws error (no response received)
+- Frontend catch block executes
+- Error displayed to user: "Network error" or similar
+- Backend never receives request (fails before reaching server)
+
+INVALID REQUEST:
+- Backend receives request but validation fails
+- Returns 400 Bad Request with error message
+- Frontend receives response with status 400
+- Error message extracted: err.response.data.message
+- Displayed to user in red text
+
+AUTHENTICATION FAILURE:
+- Token missing/invalid/expired
+- authMiddleware returns 401 Unauthorized
+- Frontend receives 401 status
+- AuthContext removes token from localStorage
+- User redirected to /login page
+
+SERVER ERROR:
+- Backend throws exception (database error, calculation error)
+- Try-catch in controller catches error
+- Returns 500 Internal Server Error
+- Error message logged to console (for debugging)
+- Generic message sent to frontend: "Failed to [action]"
+- Frontend displays error to user
+
+TIMEOUT:
+- Request takes longer than 15 seconds (Axios timeout)
+- Axios cancels request
+- Frontend receives timeout error
+- User sees timeout message
+
+SPECIFIC FAILURE SCENARIOS:
+
+Satellite Not Found:
+- GET /api/satellites/:id with invalid ID
+- Backend: Satellite.findOne() returns null
+- Returns 404 Not Found: { message: "Satellite not found" }
+- Frontend: Displays "Satellite not found" error
+
+TLE Calculation Failure:
+- Satellite has invalid/corrupt TLE data
+- tle.js throws error
+- Backend catches error
+- Returns 400: { message: "Satellite missing TLE" }
+- Frontend: Shows error, user cannot view position
+
+Weather API Failure:
+- OpenWeather API is down or key invalid
+- node-fetch throws error
+- Backend catches error
+- Returns prediction with visibilityScore: "Average" (fallback)
+- Frontend: Still shows prediction, but with default weather
+
+Database Connection Failure:
+- MongoDB is unreachable
+- Mongoose connection fails
+- Server startup fails (server.js exits)
+- No requests can be served
+- Error logged: "Mongo connection error"
+
+================================================================================
+END OF BACKEND VIVA DOCUMENTATION
+================================================================================
+

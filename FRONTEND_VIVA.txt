@@ -1,0 +1,535 @@
+================================================================================
+FRONTEND VIVA DOCUMENTATION - ISRO SATELLITE PASS PREDICTOR
+================================================================================
+
+1. FRONTEND STACK USED
+================================================================================
+
+In this project, I used the following frontend technologies:
+
+- React 19.2.0: The core UI library for building component-based interfaces
+- Vite 7.2.2: Build tool and development server (faster than Create React App)
+- Tailwind CSS 3.4.14: Utility-first CSS framework for styling
+- Framer Motion 12.23.25: Animation library for smooth UI transitions
+- React Router DOM 7.10.0: Client-side routing for navigation
+- Axios 1.13.2: HTTP client for API communication
+- React Leaflet 5.0.0: Map component for displaying satellite positions
+- React i18next 16.4.1: Internationalization (supports English and Hindi)
+- React Icons 5.5.0: Icon library (HeroIcons and FontAwesome)
+
+All dependencies are listed in frontend/package.json.
+
+
+2. WHY REACT WAS CHOSEN
+================================================================================
+
+I chose React for this project because:
+
+1. Component Reusability: The project has many reusable UI elements like Card, 
+   Button, StatCard, and SatelliteCard. React's component model makes it easy to 
+   create these once and reuse them across pages.
+
+2. State Management: React hooks (useState, useEffect) handle local component 
+   state efficiently. For global authentication state, I used React Context API 
+   (AuthContext.jsx).
+
+3. Real-time Updates: The MapView page needs to update satellite positions every 
+   5 seconds. React's re-rendering mechanism handles these updates smoothly.
+
+4. Large Ecosystem: React has excellent libraries like React Leaflet for maps, 
+   Framer Motion for animations, and React Router for navigation - all of which 
+   I needed for this project.
+
+5. Developer Experience: React's declarative syntax makes the code readable and 
+   maintainable, especially for complex UI like the satellite tracking map.
+
+
+3. FOLDER STRUCTURE AND RESPONSIBILITIES
+================================================================================
+
+The frontend folder structure is organized as follows:
+
+frontend/
+├── src/
+│   ├── main.jsx                    # Entry point - mounts React app
+│   ├── App.jsx                     # Main app component with routing
+│   ├── index.css                   # Global styles and Tailwind imports
+│   │
+│   ├── pages/                      # Page components (route-level)
+│   │   ├── Home.jsx                # Landing page with pass prediction
+│   │   ├── SatelliteList.jsx       # Grid of all satellites
+│   │   ├── SatelliteDetails.jsx   # Individual satellite details
+│   │   ├── MapView.jsx             # Real-time satellite tracking map
+│   │   ├── Login.jsx               # User login page
+│   │   ├── Signup.jsx              # User registration page
+│   │   ├── Feedback.jsx            # Feedback submission form
+│   │   ├── About.jsx                # About ISRO page
+│   │   ├── DisasterSupport.jsx     # Disaster management info
+│   │   ├── SelfReliance.jsx        # Atmanirbhar Bharat content
+│   │   └── learn/                  # Learning hub pages
+│   │       ├── LearningHub.jsx
+│   │       ├── Orbits.jsx
+│   │       ├── LaunchVehicles.jsx
+│   │       ├── Gaganyaan.jsx
+│   │       └── ISROHistory.jsx
+│   │
+│   ├── components/                  # Reusable UI components
+│   │   ├── NavBar.jsx              # Top navigation bar
+│   │   ├── Footer.jsx              # Footer with social links
+│   │   ├── Card.jsx                # Glassmorphism card wrapper
+│   │   ├── Button.jsx               # Styled button component
+│   │   ├── StatCard.jsx            # Statistics display card
+│   │   ├── SatelliteCard.jsx       # Satellite list item card
+│   │   ├── PassTable.jsx          # Pass prediction results table
+│   │   ├── PageHeader.jsx          # Page title component
+│   │   ├── Skeleton.jsx             # Loading skeleton placeholder
+│   │   ├── ToggleGroup.jsx         # Toggle button group
+│   │   ├── PrivateRoute.jsx        # Route protection wrapper
+│   │   └── ui/                     # UI-specific components
+│   │       ├── Badge.jsx
+│   │       ├── ErrorState.jsx
+│   │       ├── Loader.jsx
+│   │       ├── Select.jsx
+│   │       ├── SatelliteCard.jsx   # Live satellite card (different from list)
+│   │       ├── SatelliteGrid.jsx
+│   │       ├── NextPassCard.jsx
+│   │       ├── SectionHeader.jsx
+│   │       ├── MapContainerStyled.jsx
+│   │       └── KrissCrossBackground.jsx  # Animated background
+│   │
+│   ├── context/                    # React Context providers
+│   │   └── AuthContext.jsx         # Global authentication state
+│   │
+│   ├── services/                   # API communication
+│   │   └── api.js                  # Axios instance with base URL
+│   │
+│   ├── i18n/                       # Internationalization
+│   │   ├── index.js                # i18next configuration
+│   │   ├── en.json                 # English translations
+│   │   └── hi.json                 # Hindi translations
+│   │
+│   ├── data/                       # Static JSON data
+│   │   ├── learning/               # Learning module content
+│   │   ├── disasterSatellites.json # Disaster support satellites
+│   │   └── selfReliance.json       # Self-reliance content
+│   │
+│   └── assets/                     # Images and static files
+│       ├── logo.svg
+│       ├── cartosat-2.webp
+│       └── fallback-satellite.svg
+│
+├── public/                         # Public assets
+├── package.json                    # Dependencies and scripts
+├── vite.config.js                  # Vite configuration
+└── tailwind.config.js              # Tailwind CSS configuration
+
+
+4. ROUTING SYSTEM
+================================================================================
+
+I implemented routing using React Router DOM in App.jsx:
+
+PUBLIC ROUTES (No authentication required):
+- /login - Login page
+- /signup - Registration page
+
+PROTECTED ROUTES (Require authentication):
+All other routes are wrapped in <PrivateRoute> component:
+- / - Home page (pass prediction)
+- /satellites - Satellite list
+- /satellites/:id - Individual satellite details
+- /map - Real-time tracking map
+- /disaster-support - Disaster management info
+- /self-reliance - Atmanirbhar content
+- /learn - Learning hub
+- /learn/orbits - Orbits tutorial
+- /learn/launchers - Launch vehicles info
+- /learn/gaganyaan - Gaganyaan mission
+- /learn/history - ISRO history
+- /about - About page
+- /feedback - Feedback form
+
+HOW IT WORKS:
+1. App.jsx uses <BrowserRouter> wrapper (in main.jsx)
+2. <Routes> component defines all routes
+3. <PrivateRoute> component checks authentication before rendering protected pages
+4. If user is not authenticated, PrivateRoute redirects to /login
+5. Page transitions are animated using Framer Motion's AnimatePresence
+
+The routing is configured in App.jsx with useLocation hook to track route changes 
+for animations.
+
+
+5. AUTHENTICATION FLOW ON FRONTEND
+================================================================================
+
+LOGIN FLOW:
+1. User enters email and password in Login.jsx
+2. Form submission calls AuthContext.login(email, password)
+3. AuthContext makes POST request to /api/auth/login via api.js
+4. Backend returns JWT token and user data
+5. Token is stored in localStorage.setItem("token", token)
+6. Token is set in Axios headers: api.defaults.headers.common["Authorization"] = `Bearer ${token}`
+7. User state is updated: setUser(res.data.user)
+8. User is redirected to home page: navigate("/", { replace: true })
+
+SIGNUP FLOW:
+1. User enters name, email, password in Signup.jsx
+2. Form submission calls AuthContext.signup(name, email, password)
+3. AuthContext makes POST request to /api/auth/signup
+4. Backend validates, hashes password, creates user, returns JWT
+5. Token is stored in localStorage and Axios headers (same as login)
+6. User is redirected to home page
+
+TOKEN STORAGE:
+- Token is stored in browser's localStorage with key "token"
+- On page refresh, AuthContext checks localStorage.getItem("token")
+- If token exists, it's loaded into state and set in Axios headers
+- AuthContext also calls /api/auth/me to verify token and load user data
+
+ROUTE PROTECTION:
+- PrivateRoute.jsx component wraps all protected routes
+- It uses useAuth() hook to get isAuthenticated and loading state
+- If loading is true, it returns null (prevents flash of login page)
+- If not authenticated, it returns <Navigate to="/login" replace />
+- If authenticated, it renders the protected children component
+
+LOGOUT FLOW:
+1. User clicks logout button in NavBar
+2. Calls AuthContext.logout()
+3. Removes token from localStorage: localStorage.removeItem("token")
+4. Clears user state: setUser(null), setToken(null)
+5. Removes Authorization header: delete api.defaults.headers.common["Authorization"]
+6. User is redirected to /login page
+
+
+6. STATE MANAGEMENT
+================================================================================
+
+I used React Context API for global state management:
+
+AUTHCONTEXT (context/AuthContext.jsx):
+This is the only global state in the project. It stores:
+- user: Current logged-in user object (id, email, name)
+- token: JWT token string
+- loading: Boolean indicating if auth check is in progress
+- isAuthenticated: Computed boolean (!!user)
+
+Why Context API instead of Redux:
+- The project only needs authentication state globally
+- Redux would be overkill for a single piece of global state
+- Context API is simpler and built into React
+- No need for additional dependencies
+
+LOCAL STATE (Component-level):
+Each component uses useState for local state:
+- Home.jsx: coords, satellites, selected, prediction, loading, error
+- MapView.jsx: satellites, selected, position, orbitPath, trail, error
+- SatelliteDetails.jsx: satellite, prediction, coords, loading, error
+- Login.jsx: form (email, password), error
+- Signup.jsx: form (name, email, password), error
+
+Data Flow:
+1. Global auth state: AuthContext → All components via useAuth()
+2. API data: Fetched in useEffect → Stored in local useState → Rendered in JSX
+3. Form data: Controlled inputs → Local state → Submitted to API
+
+
+7. API COMMUNICATION
+================================================================================
+
+HOW FRONTEND TALKS TO BACKEND:
+
+BASE SETUP (services/api.js):
+- Created Axios instance with baseURL from environment variable
+- Default baseURL: 'http://localhost:5000/api' (development)
+- Production baseURL set via VITE_API_BASE_URL environment variable
+- Timeout set to 15000ms (15 seconds)
+
+AUTHENTICATION HEADERS:
+- Token is automatically added to all requests via Axios interceptor
+- In AuthContext, when token changes, it updates: 
+  api.defaults.headers.common["Authorization"] = `Bearer ${token}`
+- This means every API call automatically includes the token
+
+API CALLS USED IN PROJECT:
+1. GET /api/satellites - Fetch all satellites (Home.jsx, SatelliteList.jsx)
+2. GET /api/satellites/:id - Get satellite details (SatelliteDetails.jsx)
+3. POST /api/predict - Predict satellite pass (Home.jsx, SatelliteDetails.jsx)
+4. GET /api/position/:satId - Get real-time position (MapView.jsx)
+5. POST /api/feedback - Submit feedback (Feedback.jsx)
+6. POST /api/auth/login - User login (Login.jsx)
+7. POST /api/auth/signup - User registration (Signup.jsx)
+8. GET /api/auth/me - Verify token and get user (AuthContext.jsx)
+
+ERROR HANDLING:
+- Axios response interceptor in api.js catches all errors
+- Errors are logged to console: console.error('API error', error)
+- Components catch errors in try-catch blocks
+- Error messages are displayed to users via error state
+
+
+8. UI/UX DESIGN
+================================================================================
+
+GLASSMORPHISM:
+The entire UI uses glassmorphism design pattern:
+- Cards have: bg-white/5 (5% white opacity) + backdrop-blur-xl
+- Border: border-white/10 (10% white opacity)
+- Creates frosted glass effect
+- Example in Card.jsx: className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10"
+
+FRAMER MOTION ANIMATIONS:
+1. Page Transitions (App.jsx):
+   - AnimatePresence wraps Routes for exit animations
+   - Each route change animates: opacity 0→1, y: 20→0
+   - Spring animation: type="spring", damping: 25, stiffness: 200
+
+2. Card Hover Effects (Card.jsx):
+   - whileHover: scale: 1.01, y: -4, borderColor change
+   - Smooth transitions: duration: 0.3, ease: 'easeOut'
+
+3. Background Animation (KrissCrossBackground.jsx):
+   - Animated diagonal grid lines with SVG paths
+   - Glowing orbs that pulse and move
+   - Gradient lines that animate across screen
+   - All use motion.div with animate prop
+
+4. Component Animations:
+   - StatCard: Fades in with delay based on index
+   - SatelliteList: Each card animates in sequence
+   - MapView: Position updates animate smoothly
+
+CARD-BASED UI:
+- All content is displayed in Card components
+- Cards have three variants: large, medium, small (padding sizes)
+- Cards support hover effects (can be disabled)
+- Cards are used for: satellite info, predictions, forms, content sections
+
+COLOR SCHEME:
+- Primary: Purple (#8b5cf6) and Cyan (#0ea5e9)
+- Background: Dark gradient (radial-gradient from #14061f to #04030a)
+- Text: White with varying opacity (white, slate-300, slate-400)
+- Accents: Cyan-400 for highlights, Green/Yellow/Red for status
+
+
+9. SATELLITE IMAGE HANDLING
+================================================================================
+
+HOW IMAGES ARE FETCHED:
+1. Satellite data comes from MongoDB via /api/satellites endpoint
+2. Each satellite document has an image_url field (string)
+3. This URL is stored in the database (not the image itself)
+4. Frontend receives image_url in the API response
+
+HOW IMAGES ARE RENDERED:
+1. In SatelliteDetails.jsx, image is displayed:
+   <img src={satellite.image_url || fallbackSatellite} />
+
+2. Fallback Handling:
+   - If image_url is null/undefined, uses fallbackSatellite (local SVG)
+   - onError handler catches failed image loads
+   - If image fails to load, automatically switches to fallback:
+     onError={(e) => { e.target.onerror = null; e.target.src = fallbackSatellite; }}
+
+3. Image Display:
+   - Full-width header image in SatelliteDetails page
+   - Rounded corners: rounded-2xl
+   - Object-fit: cover (maintains aspect ratio)
+   - Gradient overlay for text readability
+
+4. No Image Caching:
+   - Images are loaded directly from URLs (could be external CDN or server)
+   - Browser handles caching automatically
+   - No manual image optimization implemented
+
+
+10. ERROR HANDLING AND LOADING STATES
+================================================================================
+
+ERROR HANDLING:
+1. API Errors:
+   - Caught in try-catch blocks around API calls
+   - Error message extracted: err.response?.data?.message
+   - Stored in error state: setError(errorMessage)
+   - Displayed to user in red text: <p className="text-red-400">{error}</p>
+
+2. Network Errors:
+   - Axios automatically handles network failures
+   - Timeout errors caught after 15 seconds
+   - User sees generic error message
+
+3. Validation Errors:
+   - Form validation in Login/Signup shows errors below inputs
+   - Backend validation errors returned in response.data.errors array
+
+4. Image Loading Errors:
+   - onError handler on <img> tags
+   - Automatically switches to fallback image
+
+LOADING STATES:
+1. Component Loading:
+   - Skeleton.jsx component shows placeholder while data loads
+   - Used in SatelliteList, SatelliteDetails, MapView
+   - Variants: "rect" for rectangular placeholders
+
+2. Button Loading:
+   - Button component has loading prop
+   - Shows spinner and disables button during API calls
+   - Example: <Button loading={loading} disabled={loading}>
+
+3. Page Loading:
+   - AuthContext has loading state during token verification
+   - PrivateRoute returns null while loading (prevents flash)
+
+4. Map Loading:
+   - MapView shows Skeleton while initial position loads
+   - mapLoading state tracks map data loading
+
+
+11. WHAT HAPPENS WHEN USER REFRESHES PAGE
+================================================================================
+
+PAGE REFRESH FLOW:
+
+1. Browser Reloads:
+   - All JavaScript state is lost
+   - React app re-initializes from scratch
+
+2. main.jsx Executes:
+   - React app mounts
+   - BrowserRouter initializes
+   - AuthProvider wraps the app
+
+3. AuthContext Initialization:
+   - Checks localStorage: const token = localStorage.getItem("token")
+   - If token exists, sets it in state: setToken(token)
+   - Sets loading: true
+
+4. Token Verification:
+   - useEffect in AuthContext runs on mount
+   - Calls /api/auth/me with token in Authorization header
+   - If token is valid:
+     - Backend returns user data
+     - setUser(userData)
+     - setLoading(false)
+     - User stays on current page
+   - If token is invalid/expired:
+     - API returns 401 error
+     - Token removed from localStorage
+     - setToken(null), setUser(null)
+     - setLoading(false)
+     - PrivateRoute redirects to /login
+
+5. Component Re-render:
+   - All components re-fetch their data
+   - Home.jsx: Fetches satellites list
+   - MapView.jsx: Fetches satellite positions
+   - SatelliteDetails.jsx: Fetches satellite details
+
+6. Route Protection:
+   - PrivateRoute checks isAuthenticated
+   - If authenticated: Renders protected page
+   - If not authenticated: Redirects to /login
+
+RESULT:
+- Authenticated users: Stay on same page, data reloads
+- Unauthenticated users: Redirected to login
+- Token persistence: Survives page refresh via localStorage
+
+
+12. WHAT HAPPENS WHEN USER LOGS OUT
+================================================================================
+
+LOGOUT FLOW:
+
+1. User Clicks Logout:
+   - Logout button in NavBar calls useAuth().logout()
+
+2. AuthContext.logout() Executes:
+   - setUser(null) - Clears user state
+   - setToken(null) - Clears token state
+   - localStorage.removeItem("token") - Removes token from storage
+   - delete api.defaults.headers.common["Authorization"] - Removes auth header
+
+3. State Updates:
+   - isAuthenticated becomes false (computed from !!user)
+   - All components using useAuth() re-render
+
+4. Route Protection:
+   - PrivateRoute detects isAuthenticated = false
+   - Returns <Navigate to="/login" replace />
+   - User is immediately redirected to login page
+
+5. Protected Routes Become Inaccessible:
+   - Any attempt to access protected routes redirects to /login
+   - Browser history is replaced (replace prop), so back button doesn't work
+
+6. API Calls Stop Working:
+   - Future API calls won't have Authorization header
+   - Protected endpoints will return 401 Unauthorized
+   - User must login again to access features
+
+RESULT:
+- Complete session cleanup
+- User redirected to login
+- All protected data becomes inaccessible
+- Fresh login required for next session
+
+
+13. OPTIMIZATION TECHNIQUES USED
+================================================================================
+
+1. CODE SPLITTING:
+   - Vite automatically code-splits routes
+   - Each page component is loaded only when needed
+   - Reduces initial bundle size
+
+2. MEMOIZATION:
+   - useMemo in MapView.jsx for coordinates calculation
+   - Prevents unnecessary recalculations on every render
+   - Example: const coordinates = useMemo(() => orbitPath.map(...), [orbitPath])
+
+3. CONDITIONAL RENDERING:
+   - Components only render when data is available
+   - Skeleton loaders prevent layout shift
+   - Example: {satellite ? <Details /> : <Skeleton />}
+
+4. API CACHING (Backend):
+   - Backend caches position data for 5 seconds
+   - Reduces redundant API calls from frontend
+   - MapView polls every 5 seconds, backend serves cached data
+
+5. IMAGE OPTIMIZATION:
+   - Fallback images prevent broken image icons
+   - onError handlers gracefully handle failures
+   - External images loaded asynchronously
+
+6. ANIMATION PERFORMANCE:
+   - Framer Motion uses GPU acceleration
+   - Animations are hardware-accelerated
+   - Will-change CSS properties for smooth animations
+
+7. BUNDLE SIZE:
+   - Tree-shaking removes unused code
+   - Vite optimizes production builds
+   - Only used dependencies are bundled
+
+8. ROUTE OPTIMIZATION:
+   - Lazy loading could be added (not currently implemented)
+   - Routes are defined statically for simplicity
+
+9. STATE OPTIMIZATION:
+   - Minimal global state (only auth)
+   - Local state for component-specific data
+   - Prevents unnecessary re-renders
+
+10. API CALL OPTIMIZATION:
+    - Debouncing not needed (user-triggered actions)
+    - Polling interval set to 5 seconds (reasonable balance)
+    - Error handling prevents infinite retry loops
+
+================================================================================
+END OF FRONTEND VIVA DOCUMENTATION
+================================================================================
+

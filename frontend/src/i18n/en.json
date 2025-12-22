@@ -1,0 +1,450 @@
+{
+  "app": {
+    "title": "Swadeshi Space Innovation",
+    "nav": {
+      "home": "Home",
+      "about": "About",
+      "aboutISRO": "About ISRO",
+      "aboutSatellites": "About Satellites",
+      "services": "Services",
+      "map": "Map",
+      "disaster": "Disaster",
+      "selfReliance": "Self-Reliance",
+      "learning": "Learning",
+      "feedback": "Feedback",
+      "login": "Login",
+      "signup": "Signup",
+      "logout": "Logout",
+      "orbits": "Orbits",
+      "launchVehicles": "Launch Vehicles",
+      "gaganyaan": "Gaganyaan",
+      "history": "ISRO History",
+      "menuToggle": "Toggle menu"
+    },
+    "common": {
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "close": "Close",
+      "viewDetails": "View Details",
+      "detecting": "Detecting...",
+      "selectSatellite": "Select satellite...",
+      "active": "Active",
+      "mission": "Mission",
+      "launch": "Launch",
+      "year": "Year",
+      "nA": "N/A",
+      "status": "Status",
+      "stale": "Stale",
+      "notFound": "Page not found",
+      "pageNotFound": "404 Not Found",
+      "minutesShort": "min",
+      "toggleTheme": "Toggle theme"
+    },
+    "home": {
+      "hero": {
+        "tagline": "Bharat-made Space Intelligence",
+        "title": "Real-Time ISRO Satellite Pass Predictor",
+        "description": "Detect your location, pick an ISRO satellite, and get the next visible pass with weather-based visibility insights.",
+        "yourLocation": "Your Location",
+        "satellite": "Satellite",
+        "predictPass": "Predict Pass"
+      },
+      "errors": {
+        "geolocationNotSupported": "Geolocation not supported by this browser.",
+        "locationPermissionNeeded": "Please allow location access to predict passes.",
+        "unableToLoadCatalog": "Unable to load satellite catalog.",
+        "predictionFailed": "Prediction failed."
+      }
+    },
+    "satellites": {
+      "fleet": "ISRO Fleet",
+      "subtitle": "Explore indigenous satellites powering mapping, communication, and science missions.",
+      "failedToFetch": "Failed to fetch satellites."
+    },
+    "satelliteDetails": {
+      "unableToLoad": "Unable to load satellite details.",
+      "locationPermissionNeeded": "Location permission needed for predictions.",
+      "predictionFailed": "Prediction failed",
+      "launchYear": "Launch Year",
+      "noradId": "NORAD ID",
+      "tleAge": "TLE Age",
+      "missionDetails": "Mission Details",
+      "mission": "Mission",
+      "purpose": "Purpose",
+      "tleStatus": "TLE Status",
+      "predictPass": "Predict Pass",
+      "yourCoordinates": "Your Coordinates"
+    },
+    "map": {
+      "title": "Real-Time Satellite Tracking",
+      "subtitle": "Watch ISRO satellites orbit Earth in real-time with live position updates and orbital paths.",
+      "selectSatellite": "Select Satellite",
+      "unableToFetchPosition": "Unable to fetch satellite position.",
+      "failedToLoad": "Failed to load satellites.",
+      "liveSatellitesAboveIndia": "Live Satellites Above India",
+      "realTimeTracking": "Real-Time Tracking",
+      "orbitPath": "Orbit Path",
+      "footprint": "Footprint",
+      "trail": "Trail",
+      "lastUpdate": "Last Update",
+      "altitude": "Altitude",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "visibleFromIndia": "Visible from India",
+      "notVisibleFromIndia": "Not visible from India",
+      "hours": "hours",
+      "satelliteInfo": "Satellite Info",
+      "currentlyVisible": "Currently Visible",
+      "liveTrackingOn": "Live Tracking ON",
+      "noneAboveIndia": "None of the monitored satellites are currently above India.",
+      "upcomingPasses": "Upcoming Passes",
+      "allMonitored": "All Monitored Satellites",
+      "noPassesPredicted": "No passes predicted in the next 30 minutes",
+      "heatmap": "Heatmap",
+      "altitudeShort": "Alt",
+      "elevationShort": "Elev"
+    },
+    "disaster": {
+      "title": "ISRO Assets Protecting India",
+      "subtitle": "Swadeshi spacecraft supply constant data for IMD, NDMA, Forest Survey, and farmers. Explore how each hazard taps a unique mix of weather, radar, and communication satellites.",
+      "impactFocus": "Impact Focus",
+      "isroSatellites": "ISRO Satellites",
+      "howTheyHelp": "How They Help"
+    },
+    "selfReliance": {
+      "atmanirbharIndex": "Atmanirbhar index",
+      "title": "Swadeshi self-reliance score",
+      "subtitle": "Static snapshot showing how much of key services are delivered by Indian space assets. The bars highlight current share handled domestically versus support from foreign constellations.",
+      "capabilityMix": "Capability mix",
+      "indian": "Indian",
+      "foreignSupport": "Foreign support",
+      "atmanirbharInsights": "Atmanirbhar insights",
+      "narrative": "Narrative"
+    },
+    "about": {
+      "title": "ISRO - Building Swadeshi Space Power",
+      "subtitle": "From PSLV to Gaganyaan, Indias space story is one of resilience and frugal innovation. This platform celebrates the satellites and scientists who keep our weather reliable, our farmers empowered, and our defense vigilant.",
+      "timeline": "ISRO Timeline",
+      "atmanirbharTitle": "Atmanirbhar Bharat in Orbit",
+      "atmanirbharDescription": "Indigenous launch vehicles, indigenous avionics, indigenous payloads. The Real-Time ISRO Satellite Pass Predictor inspires students and innovators to build on this legacy with open data and modern geospatial tooling.",
+      "missionHighlights": {
+        "cartosat": {
+          "title": "Cartosat Constellation",
+          "details": "High-resolution imaging satellites powering Atmanirbhar mapping, smart city planning, and rapid disaster response."
+        },
+        "risat": {
+          "title": "RISAT Radar Eyes",
+          "details": "All-weather radar satellites that secure our oceans, monitor agriculture, and support strategic reconnaissance."
+        },
+        "gsat": {
+          "title": "GSAT Communication Backbone",
+          "details": "Geostationary fleet that keeps Bharat connected via broadband, TV, maritime and in-flight communications."
+        },
+        "navic": {
+          "title": "NavIC / IRNSS",
+          "details": "Regional navigation system delivering sub-10m accuracy across land, sea, and air - built entirely in India."
+        },
+        "emisat": {
+          "title": "EMISAT Intelligence",
+          "details": "Dedicated electromagnetic intelligence platform expanding indigenous space-based surveillance capabilities."
+        },
+        "aditya": {
+          "title": "Aditya-L1 Solar Mission",
+          "details": "India's first space-based solar observatory studying coronal heating, solar winds, and space weather alerts."
+        }
+      },
+      "timelineItems": {
+        "isroEstablished": "ISRO Established",
+        "aryabhata": "Aryabhata - First Indian Satellite",
+        "slv3": "SLV-3 - First Indigenous Launch",
+        "chandrayaan1": "Chandrayaan-1 - Moon Mission",
+        "mangalyaan": "Mars Orbiter Mission (Mangalyaan)",
+        "chandrayaan3": "Chandrayaan-3 - Lunar Landing"
+      }
+    },
+    "feedback": {
+      "title": "Mission Feedback",
+      "subtitle": "Share ideas to improve Swadeshi space awareness tools",
+      "name": "Name",
+      "email": "Email",
+      "message": "Message",
+      "rating": "Rating",
+      "sendFeedback": "Send Feedback",
+      "thankYou": "Thank you! Your feedback uplinks our mission.",
+      "failedToSend": "Failed to send feedback."
+    },
+    "login": {
+      "title": "Login",
+      "email": "Email",
+      "password": "Password",
+      "button": "Login",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign Up",
+      "invalidCredentials": "Invalid login credentials"
+    },
+    "signup": {
+      "title": "Create an Account",
+      "name": "Full Name",
+      "email": "Email",
+      "password": "Password (min 6 characters)",
+      "button": "Sign Up",
+      "hasAccount": "Already have an account?",
+      "login": "Login",
+      "failed": "Signup failed"
+    },
+    "passTable": {
+      "awaitingPrediction": "Awaiting prediction. Choose a satellite and tap Predict to view the next pass.",
+      "nextVisiblePass": "Next Visible Pass",
+      "duration": "Duration",
+      "maxElevation": "Max Elevation",
+      "time": "Time",
+      "visibility": "Visibility",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "weatherSnapshot": "Weather Snapshot",
+      "temperature": "Temperature",
+      "conditions": "Conditions",
+      "clouds": "Clouds",
+      "visibilityDistance": "Visibility",
+      "good": "Good",
+      "average": "Average",
+      "poor": "Poor",
+      "day": "Day",
+      "night": "Night",
+      "durationMinutes": "{{minutes}} min",
+      "inMinutes": "In {{minutes}} min",
+      "peakAt": "Peak {{elevation}}° at {{time}} IST",
+      "bestViewFrom": "Best view from {{location}}"
+    },
+    "learning": {
+      "hub": {
+        "tagline": "Learning hub",
+        "title": "ISRO Knowledge Capsule",
+        "subtitle": "Dive into curated lessons on indigenous launchers, crew missions, and data standards. Each module is sourced from static JSON, keeping the knowledge base offline friendly.",
+        "exploreModule": "Explore module →"
+      },
+      "orbits": {
+        "tagline": "Orbit classroom",
+        "title": "How ISRO positions its spacecraft",
+        "whyItMatters": "Why it matters here"
+      }
+    },
+    "footer": {
+      "about": "About",
+      "aboutDescription": "Real-time tracking and prediction system for ISRO satellites. Built with modern web technologies for accurate orbital mechanics.",
+      "dataSources": "Data Sources",
+      "connect": "Connect",
+      "copyright": "Swadeshi Space Innovation. All rights reserved.",
+      "sources": {
+        "spaceTrack": "Space-Track.org (TLE data)",
+        "openWeather": "OpenWeather API",
+        "isroOfficial": "ISRO Official Data"
+      }
+    },
+    "card": {
+      "unknownSatellite": "Unknown Satellite"
+    },
+    "errorState": {
+      "generic": "Something went wrong"
+    },
+    "learning": {
+      "data": {
+        "modules": {
+          "/learn/orbits": {
+            "title": "Orbit Fundamentals",
+            "summary": "Understand LEO, MEO, GEO, SSO and how TLE + SGP4 power our tracker."
+          },
+          "/learn/launchers": {
+            "title": "Launch Vehicles",
+            "summary": "Compare PSLV, GSLV, and LVM3 lift capabilities fueling Swadeshi missions."
+          },
+          "/learn/gaganyaan": {
+            "title": "Gaganyaan",
+            "summary": "Crew module, abort tests, and indigenous life-support stack."
+          },
+          "/learn/history": {
+            "title": "ISRO History",
+            "summary": "Chandrayaan to Mangalyaan milestones shaping Atmanirbhar space."
+          }
+        },
+        "orbits": {
+          "topics": {
+            "leo": {
+              "title": "Low Earth Orbit (LEO)",
+              "description": "Altitude 160–2000 km. Hosts Cartosat, RISAT, EOS, enabling high-resolution revisits for land mapping."
+            },
+            "meo": {
+              "title": "Medium Earth Orbit (MEO)",
+              "description": "Altitude 2,000–35,000 km. NavIC constellation flies in inclined geosynchronous slots for regional coverage."
+            },
+            "geo": {
+              "title": "Geostationary Orbit (GEO)",
+              "description": "36,000 km equatorial orbit matching Earth rotation. INSAT/GSAT deliver uninterrupted telecom and weather feeds."
+            },
+            "sso": {
+              "title": "Sun Synchronous Orbit (SSO)",
+              "description": "Polar orbit with consistent local time passes. Ideal for Earth observation constellations requiring uniform lighting."
+            }
+          },
+          "insights": {
+            "title": "TLE + SGP4",
+            "tle": {
+              "title": "Two-Line Elements (TLE)",
+              "text": "Compact NASA/NORAD format describing orbital planes, mean motion, eccentricity, and inclination."
+            },
+            "sgp4": {
+              "title": "SGP4 propagation",
+              "text": "Mathematical model that advances TLEs forward in time. Our backend uses tle.js to predict footprints."
+            },
+            "project": {
+              "title": "Project link",
+              "text": "Prediction API ingests TLE per satellite, runs SGP4 for pass forecasts, and streams coordinates to the map."
+            }
+          }
+        },
+        "launchVehicles": {
+          "pslv": {
+            "name": "PSLV",
+            "payload": "1.7 t to LEO / 1.1 t to SSO",
+            "description": "The workhorse four-stage launcher mixing solid + liquid stages. Ideal for EO missions and commercial rideshares."
+          },
+          "gslv-mk-ii": {
+            "name": "GSLV Mk-II",
+            "payload": "2.7 t to GTO",
+            "description": "Cryogenic upper stage enables GEO comsat deployments. Powers missions like GISAT and regional communications."
+          },
+          "lvm3": {
+            "name": "LVM3",
+            "payload": "4 t to GTO / 8 t to LEO",
+            "description": "Heavy-lift with twin S200 boosters and CE-20 cryogenic stage. Selected for Gaganyaan crew and deep-space missions."
+          }
+        },
+        "gaganyaan": {
+          "crew-module": {
+            "title": "Crew Module",
+            "description": "Pressurized capsule designed for three Vyomnauts with indigenous ECLSS, touchscreen avionics, and deceleration systems."
+          },
+          "abort-safety": {
+            "title": "Abort & Safety",
+            "description": "Demo missions (TV-D1, D2) validate quick escape motors and recovery in the Bay of Bengal with the Indian Navy."
+          },
+          "mission-timeline": {
+            "title": "Mission Timeline",
+            "description": "Uncrewed flights in 2025–26 will precede the first crewed LEO mission, leveraging LVM3 and HAL-built crew modules."
+          }
+        },
+        "history": {
+          "chandrayaan-programme": {
+            "title": "Chandrayaan Programme",
+            "description": "Chandrayaan-1 confirmed lunar water molecules. Chandrayaan-2 orbiter continues polar science. Chandrayaan-3 achieved a south-pole landing with Vikram + Pragyan in 2023."
+          },
+          "mangalyaan-mars-orbiter-mission": {
+            "title": "Mangalyaan (Mars Orbiter Mission)",
+            "description": "Launched in 2013 via PSLV, became the first Asian Mars mission to reach orbit on its maiden attempt, showcasing frugal engineering."
+          },
+          "indian-space-highlights": {
+            "title": "Indian Space Highlights",
+            "description": "From Aryabhata (1975) to Aditya-L1 (2023), ISRO steadily strengthened indigenous launchers, spacecraft platforms, and deep-space communications."
+          }
+        }
+      }
+    },
+    "selfReliance": {
+      "data": {
+        "domains": {
+          "Navigation": {
+            "name": "Navigation",
+            "context": "NavIC constellation provides complete regional navigation coverage for India and surrounding areas."
+          },
+          "EarthObservation": {
+            "name": "Earth Observation",
+            "context": "Cartosat, Resourcesat, Oceansat, and RISAT fleets cover most civilian and defense Earth observation needs."
+          },
+          "DisasterManagement": {
+            "name": "Disaster Management",
+            "context": "INSAT weather satellites, RISAT radar, and Cartosat optical satellites provide comprehensive disaster monitoring."
+          },
+          "Weather": {
+            "name": "Weather",
+            "context": "INSAT-3D and INSAT-3DR provide primary weather monitoring, with some reliance on international data for global models."
+          }
+        },
+        "insights": {
+          "0": "Navigation signals are entirely powered by NavIC constellation, enabling complete independence from foreign GNSS systems.",
+          "1": "Earth observation remains a core strength with Cartosat, Resourcesat, Oceansat, and RISAT series covering diverse applications.",
+          "2": "Disaster management leverages INSAT weather satellites and RISAT radar imaging for comprehensive monitoring and response.",
+          "3": "Weather services primarily use INSAT-3D and INSAT-3DR, with some international data integration for global weather models."
+        }
+      }
+    },
+    "disaster": {
+      "items": {
+        "cyclones": {
+          "title": "Cyclones",
+          "summary": "Seasonal low-pressure systems from the Bay of Bengal demand fast imaging and ocean wind mapping.",
+          "satellite": {
+            "INSAT-3D": { "role": "Rapid-scan infrared images and sounding for IMD warnings." },
+            "INSAT-3DR": { "role": "Advanced meteorological observation and weather forecasting for cyclone tracking." },
+            "Oceansat-3 (EOS-06)": { "role": "Scatterometer winds pinpoint cyclone intensity at sea." }
+          },
+          "response": {
+            "0": "INSAT rapid imaging delivers storm center fixes every 15 minutes.",
+            "1": "Oceansat scatterometer vectors help fishermen advisories and landfall prediction."
+          }
+        },
+        "floods": {
+          "title": "Floods",
+          "summary": "Monsoon-fed rivers and cloudbursts require day-night radar coverage for inundation mapping.",
+          "satellite": {
+            "RISAT-2BR1": { "role": "All-weather Synthetic Aperture Radar cuts through clouds for flood plain updates." },
+            "Cartosat-3": { "role": "Very high-resolution optical shots guide relief logistics and breach monitoring." }
+          },
+          "response": {
+            "0": "RISAT provides district-level flood layers for NDMA dashboards.",
+            "1": "Cartosat imagery supports bridge safety checks and evacuation routes."
+          }
+        },
+        "forest-fires": {
+          "title": "Forest Fires",
+          "summary": "Western Ghats and Himalayan forests rely on thermal monitoring and smoke plume tracking.",
+          "satellite": {
+            "Scatsat-1": { "role": "Ocean wind monitoring also supports fire weather pattern analysis." },
+            "RISAT-2BR1": { "role": "Radar imaging for all-weather fire detection and monitoring." },
+            "INSAT-3D": { "role": "Night-time infrared brightens fire pixels for quick response." }
+          },
+          "response": {
+            "0": "Thermal anomaly feeds slip into Van Agni alerting system.",
+            "1": "Geostationary coverage keeps fire control rooms updated every 15 minutes."
+          }
+        },
+        "landslides": {
+          "title": "Landslides",
+          "summary": "Fragile Himalayan slopes need precise elevation models and rainfall-linked triggers.",
+          "satellite": {
+            "Cartosat-2F": { "role": "Stereo pairs offer 1 m DEMs to detect slope instability." },
+            "GSAT-30": { "role": "Emergency SATCOM backhauls data from remote hill sensors." }
+          },
+          "response": {
+            "0": "Cartosat DEM differencing flags slope creep near highways.",
+            "1": "GSAT-30 ensures uninterrupted SDRF communication during fiber cuts."
+          }
+        },
+        "drought": {
+          "title": "Drought",
+          "summary": "Arid belts of Vidarbha and Rayalaseema need soil moisture, vegetation, and groundwater cues.",
+          "satellite": {
+            "Resourcesat-2A": { "role": "Multi-spectral Earth observation for vegetation and soil moisture monitoring." },
+            "RISAT-2BR1": { "role": "SAR-derived soil moisture indices for agriculture advisories." }
+          },
+          "response": {
+            "0": "Resourcesat-2A provides vegetation indices for drought assessment.",
+            "1": "RISAT moisture maps feed the National Agricultural Drought Assessment System."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,830 @@
+cccc================================================================================
+BACKEND VIVA DOCUMENTATION - ISRO SATELLITE PASS PREDICTOR
+================================================================================
+
+BACKEND TECH STACK
+================================================================================
+
+The backend of this project uses the following technologies:
+
+Node.js - JavaScript runtime environment that allows running JavaScript on the server. Node.js uses an event-driven, non-blocking I/O model which makes it efficient for handling multiple concurrent requests.
+
+Express.js 5.1.0 - Minimal and flexible web application framework for Node.js. Express provides a robust set of features for building web applications and REST APIs, including routing, middleware support, and HTTP utility methods.
+
+MongoDB - NoSQL document database that stores data in flexible, JSON-like documents. MongoDB is schema-less, meaning documents in a collection can have different structures, which provides flexibility for evolving data models.
+
+Mongoose 8.20.0 - MongoDB object modeling library (ODM - Object Document Mapper). Mongoose provides a schema-based solution to model application data, includes built-in type casting, validation, query building, and business logic hooks.
+
+JWT (jsonwebtoken 9.0.2) - Library for creating and verifying JSON Web Tokens. JWTs are used for stateless authentication, allowing the server to verify user identity without storing session data.
+
+bcrypt 6.0.0 - Library for hashing passwords. bcrypt is designed to be slow by design, making it resistant to brute-force attacks. It automatically handles salt generation and hashing.
+
+tle.js 5.0.1 - Library for working with Two-Line Element (TLE) satellite data. TLE is the standard format for representing satellite orbital elements. This library calculates satellite positions, elevations, and orbital information.
+
+suncalc 1.9.0 - Library for calculating sun position, phases, and times. Used to determine if a satellite pass occurs during daylight or night, and for calculating solar panel efficiency in telemetry.
+
+node-fetch 2.6.7 - Lightweight HTTP client for making requests to external APIs. Used to fetch TLE data from CelesTrak and weather data from OpenWeather API.
+
+node-cron 4.2.1 - Task scheduler for Node.js. Used to schedule automatic TLE data refresh at specific times (daily at 2 AM IST).
+
+express-validator 7.3.1 - Middleware for validating and sanitizing request data. Ensures input data meets requirements before processing.
+
+cors 2.8.5 - Middleware for enabling Cross-Origin Resource Sharing. Allows the frontend (running on different port) to make requests to the backend API.
+
+dotenv 17.2.3 - Module for loading environment variables from .env file. Keeps sensitive configuration data (API keys, database URLs) separate from code.
+
+All dependencies are defined in backend/package.json.
+
+
+FOLDER STRUCTURE EXPLANATION
+================================================================================
+
+The backend folder structure follows MVC (Model-View-Controller) architecture pattern:
+
+backend/
+  server.js - Entry point of the application. This file:
+    - Loads environment variables
+    - Connects to MongoDB database
+    - Seeds initial satellite data
+    - Schedules TLE refresh job
+    - Starts Express server
+
+  app.js - Express application configuration. This file:
+    - Sets up CORS middleware
+    - Configures JSON body parser
+    - Defines health check endpoint
+    - Mounts all route handlers
+
+  config/
+    db.js - Database connection logic. Exports connectDB function that:
+    - Reads MONGO_URI from environment variables
+    - Connects to MongoDB using Mongoose
+    - Handles connection errors
+
+  routes/ - Route definitions (URL patterns mapped to controller functions):
+    authRoutes.js - Authentication routes (/api/auth/login, /api/auth/signup, /api/auth/me)
+    satelliteRoutes.js - Satellite routes (/api/satellites, /api/satellites/:id)
+    predictionRoutes.js - Prediction routes (/api/predict, /api/position/:satId)
+    feedbackRoutes.js - Feedback routes (/api/feedback)
+    telemetryRoutes.js - Telemetry routes (/api/satellites/telemetry/:id)
+
+  controllers/ - Business logic (what happens when routes are accessed):
+    authController.js - Handles user registration, login, and token verification
+    satelliteController.js - Handles fetching satellite lists and details
+    predictionController.js - Handles pass prediction and real-time position calculation
+    feedbackController.js - Handles feedback submission and retrieval
+    telemetryController.js - Generates satellite telemetry data (battery, temperature, etc.)
+
+  models/ - Mongoose schemas (database structure definitions):
+    User.js - User schema (email, passwordHash, name, createdAt)
+    Satellite.js - Satellite schema (name, norad_id, TLE data, mission info)
+    Feedback.js - Feedback schema (name, email, message, rating, timestamps)
+
+  utils/ - Helper functions and utilities:
+    authMiddleware.js - JWT token verification middleware
+    tleHelper.js - TLE calculation functions (position, orbit, pass prediction)
+    visibilityHelper.js - Functions to check if satellite is visible from India
+    tleRefresh.js - Functions to refresh TLE data from CelesTrak API
+    seedHelper.js - Functions to seed initial satellite data into database
+    observers.js - Array of Indian city coordinates for visibility calculations
+
+  data/ - Static data files:
+    isroSatellites.js - Initial satellite data with TLE information
+    indiaPolygon.json - GeoJSON polygon defining India's borders
+
+  tests/ - Test files:
+    setup.js - Test database setup configuration
+    api.test.js - API endpoint integration tests
+
+This structure separates concerns: routes define URLs, controllers contain business logic, models define data structure, and utils contain reusable functions.
+
+
+EXPRESS ROUTING ARCHITECTURE
+================================================================================
+
+Express routing follows a hierarchical structure:
+
+ROUTE MOUNTING (app.js):
+
+Routes are mounted at specific base paths:
+- app.use('/api/satellites', satelliteRoutes) - All satellite routes start with /api/satellites
+- app.use('/api/satellites/telemetry', telemetryRoutes) - Telemetry routes under satellites
+- app.use('/api', predictionRoutes) - Prediction routes start with /api
+- app.use('/api/feedback', feedbackRoutes) - Feedback routes start with /api/feedback
+- app.use('/api/auth', authRoutes) - Auth routes start with /api/auth
+
+ROUTE DEFINITION (routes/*.js):
+
+Each route file uses express.Router() to create a router instance:
+- const router = express.Router()
+- Routes are defined on the router: router.get('/', controllerFunction)
+- Router is exported: module.exports = router
+
+ROUTE TYPES:
+
+1. GET Routes (Read operations):
+   - GET /api/satellites - Get all satellites
+   - GET /api/satellites/:id - Get single satellite
+   - GET /api/position/:satId - Get real-time position
+   - GET /api/feedback - Get all feedback
+   - GET /api/auth/me - Get current user
+
+2. POST Routes (Create operations):
+   - POST /api/auth/login - User login
+   - POST /api/auth/signup - User registration
+   - POST /api/predict - Predict satellite pass
+   - POST /api/feedback - Submit feedback
+
+ROUTE PARAMETERS:
+
+Dynamic parameters in URLs:
+- /api/satellites/:id - :id is a route parameter
+- Accessed in controller via req.params.id
+- Can be MongoDB _id or norad_id
+
+QUERY PARAMETERS:
+
+Optional query strings:
+- /api/position/:satId?lookaheadMinutes=30
+- Accessed in controller via req.query.lookaheadMinutes
+
+MIDDLEWARE IN ROUTES:
+
+Middleware functions can be applied to routes:
+- authMiddleware: Verifies JWT token before allowing access
+- express-validator: Validates request body before processing
+- Example: router.get('/me', authMiddleware, me) - Requires authentication
+
+ROUTE HANDLING FLOW:
+
+1. Request arrives at Express server
+2. CORS middleware checks origin
+3. JSON parser extracts request body
+4. Route matcher finds matching route
+5. Middleware executes (if any)
+6. Controller function executes
+7. Response sent back to client
+
+
+CONTROLLERS VS ROUTES VS UTILS
+================================================================================
+
+ROUTES (routes/*.js):
+
+Purpose: Define URL patterns and map them to controller functions.
+
+Responsibilities:
+- Define which URLs trigger which controller functions
+- Apply middleware (auth, validation) to specific routes
+- Handle route parameters and query strings
+- Export router for mounting in app.js
+
+Example from satelliteRoutes.js:
+- router.get('/', getSatellites) - Maps GET /api/satellites to getSatellites controller
+- router.get('/:id', getSatelliteDetails) - Maps GET /api/satellites/:id to getSatelliteDetails controller
+
+Routes are thin - they only define the mapping, no business logic.
+
+CONTROLLERS (controllers/*.js):
+
+Purpose: Contain business logic - what actually happens when a route is accessed.
+
+Responsibilities:
+- Extract data from request (req.body, req.params, req.query)
+- Validate input data
+- Call database operations (using Models)
+- Call utility functions for calculations
+- Make external API calls if needed
+- Format response data
+- Send HTTP response with appropriate status code
+
+Example from predictionController.js:
+- predictSatellitePass function:
+  1. Extracts lat, lon, satelliteId from req.body
+  2. Validates coordinates are numbers
+  3. Finds satellite in database using findSatellite utility
+  4. Calculates next pass using computeNextPass from tleHelper
+  5. Fetches weather data using fetchWeather function
+  6. Formats response with prediction and weather data
+  7. Sends JSON response
+
+Controllers are where the main application logic lives.
+
+UTILS (utils/*.js):
+
+Purpose: Reusable helper functions used by multiple controllers.
+
+Responsibilities:
+- Provide pure functions that can be used anywhere
+- Handle complex calculations (TLE, visibility)
+- Provide middleware functions (authMiddleware)
+- Handle external API communication (TLE refresh)
+- Database operations that are reused (seedHelper)
+
+Example utilities:
+- tleHelper.js: computeNextPass, getCurrentPosition, getOrbitTrack
+- visibilityHelper.js: isVisibleFromIndia, getNextPass
+- authMiddleware.js: JWT verification function
+- tleRefresh.js: Functions to fetch and update TLE data
+
+Utils are pure functions or reusable modules that don't depend on Express request/response objects.
+
+SEPARATION OF CONCERNS:
+
+- Routes: "What URLs exist?"
+- Controllers: "What happens when URL is accessed?"
+- Utils: "How do we do complex operations?"
+
+This separation makes code:
+- Easier to test (each part can be tested independently)
+- Easier to maintain (changes in one area don't affect others)
+- Easier to understand (clear responsibilities)
+- More reusable (utils can be used by multiple controllers)
+
+
+MONGODB USAGE
+================================================================================
+
+COLLECTIONS:
+
+MongoDB stores data in collections (similar to tables in SQL). This project uses three collections:
+
+1. users - Stores user accounts
+   - Created automatically by Mongoose when first User document is saved
+   - Contains: email, passwordHash, name, createdAt
+   - Indexed on email field for fast lookups
+
+2. satellites - Stores ISRO satellite data
+   - Created automatically by Mongoose when first Satellite document is saved
+   - Contains: name, norad_id, mission, purpose, launch_year, image_url, tle_line1, tle_line2, tle_updated_at, timestamps
+   - Indexed on norad_id field (unique constraint)
+
+3. feedbacks - Stores user feedback
+   - Created automatically by Mongoose when first Feedback document is saved
+   - Contains: name, email, message, rating, timestamps
+   - No unique constraints
+
+SCHEMAS:
+
+Schemas define the structure and validation rules for documents:
+
+User Schema (models/User.js):
+- email: String, required, unique, lowercase, trimmed
+- passwordHash: String, required (hashed password, never plain text)
+- name: String, default empty string
+- createdAt: Date, default Date.now
+- No timestamps option (only createdAt, no updatedAt)
+
+Satellite Schema (models/Satellite.js):
+- name: String, required
+- norad_id: Number, required, unique (NORAD catalog identifier)
+- mission: String (optional)
+- purpose: String (optional)
+- launch_year: Number (optional)
+- image_url: String (optional, URL to satellite image)
+- tle_line1: String, required (TLE line 1)
+- tle_line2: String, required (TLE line 2)
+- tle_updated_at: Date, default Date.now
+- timestamps: true (automatically adds createdAt and updatedAt)
+
+Feedback Schema (models/Feedback.js):
+- name: String, required
+- email: String, required
+- message: String, required
+- rating: Number, required, min: 1, max: 5
+- timestamps: true (automatically adds createdAt and updatedAt)
+
+RELATIONS:
+
+MongoDB is a NoSQL database and does not use foreign keys or joins like SQL databases. This project does not implement document relationships.
+
+Why no relations:
+- Each collection is independent
+- Satellites don't reference users
+- Feedback doesn't reference specific satellites
+- Users don't have favorite satellites or saved predictions
+
+If relations were needed, they could be implemented as:
+1. Embedded documents (store related data inside parent document)
+2. References (store ObjectId and manually populate using findById)
+3. Application-level joins (fetch related data in controller)
+
+Current design keeps collections independent for simplicity and performance.
+
+
+AUTHENTICATION SYSTEM
+================================================================================
+
+SIGNUP:
+
+When a user registers (POST /api/auth/signup):
+
+1. Request Validation:
+   - express-validator checks email format and password length (6+ characters)
+   - If validation fails, returns 400 with error array
+
+2. Check Existing User:
+   - User.findOne({ email }) checks if email already exists
+   - If exists, returns 409 Conflict with message "Email already registered"
+
+3. Password Hashing:
+   - bcrypt.hash(password, 10) hashes the password
+   - 10 is the salt rounds (number of hashing iterations)
+   - Higher rounds = more secure but slower
+   - 10 rounds is a good balance
+
+4. User Creation:
+   - new User({ email, passwordHash, name }) creates user document
+   - await user.save() saves to MongoDB
+   - Email is automatically lowercased and trimmed by schema
+
+5. JWT Generation:
+   - jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
+   - Payload contains user ID and email
+   - Secret key from environment variable
+   - Token expires in 7 days
+
+6. Response:
+   - Returns { token, user: { id, email, name } }
+   - Frontend stores token and user data
+
+LOGIN:
+
+When a user logs in (POST /api/auth/login):
+
+1. Find User:
+   - User.findOne({ email }) finds user by email
+   - If not found, returns 401 Unauthorized
+
+2. Password Verification:
+   - bcrypt.compare(password, user.passwordHash) compares plain password with hash
+   - Returns true if password matches, false otherwise
+   - If false, returns 401 Unauthorized
+
+3. JWT Generation:
+   - Same process as signup: jwt.sign() with user ID and email
+   - Token expires in 7 days
+
+4. Response:
+   - Returns { token, user: { id, email, name } }
+   - Frontend stores token and user data
+
+JWT GENERATION:
+
+JWT (JSON Web Token) structure:
+- Header: Algorithm and token type
+- Payload: User data (id, email) and expiration
+- Signature: Encrypted using JWT_SECRET
+
+Generation process:
+- jwt.sign(payload, secret, options)
+- Payload: { id: user._id, email: user.email }
+- Secret: JWT_SECRET from environment variables
+- Options: { expiresIn: '7d' } - token valid for 7 days
+
+Why JWT:
+- Stateless: Server doesn't need to store session data
+- Scalable: Works across multiple servers
+- Secure: Signed with secret key, cannot be tampered with
+- Portable: Token contains user information
+
+JWT VERIFICATION:
+
+Verification happens in authMiddleware.js:
+
+1. Extract Token:
+   - From Authorization header: "Bearer <token>"
+   - Or from x-access-token header
+   - If no token, returns 401 Unauthorized
+
+2. Verify Token:
+   - jwt.verify(token, JWT_SECRET) verifies signature and expiration
+   - If invalid or expired, throws error
+   - If valid, returns decoded payload
+
+3. Attach User to Request:
+   - req.user = { id: decoded.id, email: decoded.email }
+   - Controller can access user info via req.user
+
+4. Continue to Controller:
+   - next() calls the next middleware or controller
+   - If verification fails, returns 401 and stops
+
+Protected routes use authMiddleware:
+- router.get('/me', authMiddleware, me)
+- Middleware runs before controller
+- Only authenticated users can access
+
+
+MIDDLEWARE USAGE
+================================================================================
+
+AUTH MIDDLEWARE (utils/authMiddleware.js):
+
+Purpose: Verify JWT token before allowing access to protected routes.
+
+How it works:
+1. Extracts token from request headers (Authorization or x-access-token)
+2. Verifies token using JWT_SECRET
+3. If valid: Attaches user info to req.user and calls next()
+4. If invalid: Returns 401 Unauthorized
+
+Usage:
+- Applied to routes that need authentication
+- Example: router.get('/me', authMiddleware, me)
+- Runs before controller function
+
+CORS MIDDLEWARE (app.js):
+
+Purpose: Allow frontend (different origin) to make API requests.
+
+Configuration:
+- Reads CLIENT_URL from environment (comma-separated allowed origins)
+- Supports wildcard '*' for development
+- Checks origin in request headers
+- Allows request if origin matches or '*' is set
+
+Why needed:
+- Frontend: http://localhost:5173 (Vite dev server)
+- Backend: http://localhost:5000
+- Different origins = CORS required by browser security
+- Without CORS, browser blocks requests
+
+JSON PARSING MIDDLEWARE (app.js):
+
+Purpose: Parse JSON request bodies.
+
+Configuration:
+- app.use(express.json())
+- Automatically parses Content-Type: application/json
+- Makes req.body available as JavaScript object
+
+Why needed:
+- API receives JSON in request body (login, signup, predict, feedback)
+- Without this, req.body would be undefined
+- Converts JSON string to JavaScript object
+
+
+EXTERNAL APIs USED
+================================================================================
+
+OPENWEATHER API:
+
+Purpose: Get weather data for satellite pass visibility prediction.
+
+Usage:
+- Endpoint: https://api.openweathermap.org/data/2.5/weather
+- Method: GET
+- Parameters: lat, lon, units=metric, appid=API_KEY
+- Used in: predictionController.js, fetchWeather function
+
+What it provides:
+- Cloud coverage percentage
+- Visibility distance in meters
+- Precipitation (rain/snow)
+- Temperature
+- Weather conditions description
+
+How it's used:
+1. User requests pass prediction with their coordinates
+2. Backend calculates next satellite pass
+3. Backend calls OpenWeather API with user's lat/lon
+4. API returns weather data
+5. Backend calculates visibility score based on:
+   - Cloud coverage (< 30% = Good, < 60% = Average, else = Poor)
+   - Visibility distance (> 8000m = Good, > 4000m = Average)
+   - Precipitation (any = Poor)
+6. Visibility score included in prediction response
+
+Error Handling:
+- If API key not configured, returns "Average" as default
+- If API call fails, returns "Average" with error message in source field
+- Never blocks prediction - always provides fallback
+
+CELESTRAK API:
+
+Purpose: Fetch updated TLE (Two-Line Element) data for satellites.
+
+Usage:
+- Bulk endpoint: https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle
+- Individual endpoint: https://celestrak.org/NORAD/elements/gp.php?CATNR={norad_id}&FORMAT=TLE
+- Method: GET
+- Used in: utils/tleRefresh.js
+
+What it provides:
+- TLE data in text format (3 lines: name, line1, line2)
+- Updated orbital elements for all active satellites
+- Public API, no authentication required
+
+How it's used:
+1. TLE refresh job runs daily at 2 AM IST
+2. Fetches bulk TLE data from active satellites list
+3. Parses text format into Map structure
+4. For each satellite in database:
+   - Tries to get TLE from bulk fetch
+   - Falls back to individual fetch if not found
+   - Updates satellite.tle_line1, tle_line2, tle_updated_at
+   - Saves to database
+5. Logs results: updated count, skipped count, error count
+
+Rate Limiting:
+- 500ms delay between individual satellite fetches
+- Prevents overwhelming CelesTrak API
+- Retry logic: 3 attempts with exponential backoff
+
+Why needed:
+- TLE data becomes stale as orbits decay
+- Fresh TLE ensures accurate position calculations
+- Automatic refresh keeps data current without manual intervention
+
+
+BACKGROUND JOBS
+================================================================================
+
+TLE REFRESH JOB:
+
+Purpose: Automatically update satellite TLE data to keep positions accurate.
+
+Implementation:
+- Uses node-cron library for scheduling
+- Runs immediately on server startup
+- Then runs daily at 02:00 IST (Asia/Kolkata timezone)
+- Cron expression: '0 2 * * *' (2 AM every day)
+
+Process:
+1. Fetches TLE data from CelesTrak API (bulk and individual)
+2. Parses TLE text format
+3. Gets all satellites from database
+4. Updates each satellite's TLE data
+5. Logs results
+
+Error Handling:
+- Individual satellite failures don't stop entire job
+- Errors logged but don't crash server
+- Retry logic for API failures
+- Continues processing even if some satellites fail
+
+Why scheduled:
+- TLE data changes slowly (orbits decay over time)
+- Daily refresh is sufficient for accuracy
+- Running at 2 AM minimizes server load
+- Automatic process requires no manual intervention
+
+SEEDING JOB:
+
+Purpose: Initialize database with ISRO satellite data on first run.
+
+Implementation:
+- Runs once on server startup: await ensureSeedData()
+- Not a scheduled job, runs only at startup
+
+Process:
+1. Reads satellite data from data/isroSatellites.js
+2. Deletes obsolete satellites (not in seed data)
+3. Upserts satellites (inserts new, updates existing)
+4. Validates TLE data exists before inserting
+
+Why on startup:
+- Ensures database has initial data
+- Removes obsolete satellites
+- Updates existing satellites with latest seed data
+- Only runs once, not repeatedly
+
+
+WHY MONGODB WAS CHOSEN
+================================================================================
+
+MongoDB was chosen for this project for several reasons:
+
+1. FLEXIBLE SCHEMA:
+   - Satellite documents can have different fields
+   - Easy to add new fields without migrations
+   - No need to alter table structure
+   - Perfect for evolving data models
+
+2. JSON-LIKE DOCUMENTS:
+   - Documents are stored as BSON (Binary JSON)
+   - Natural fit for JavaScript/Node.js
+   - No need for object-relational mapping complexity
+   - Easy to work with in Node.js
+
+3. GOOD FOR READ-HEAVY WORKLOADS:
+   - This application reads satellite data frequently
+   - Writes are infrequent (only TLE updates and feedback)
+   - MongoDB excels at read operations
+   - Indexes on norad_id and email provide fast lookups
+
+4. EASY INTEGRATION:
+   - Mongoose provides excellent Node.js integration
+   - Schema validation built-in
+   - Automatic type casting
+   - Query builder is intuitive
+
+5. SCALABILITY:
+   - Can scale horizontally (sharding)
+   - Handles large datasets well
+   - Good performance with proper indexing
+
+6. NO COMPLEX RELATIONS:
+   - This project doesn't need joins or foreign keys
+   - Each collection is independent
+   - MongoDB's document model fits perfectly
+
+7. TLE DATA STORAGE:
+   - TLE data is just two strings (tle_line1, tle_line2)
+   - No need for complex relational structure
+   - Simple document storage is ideal
+
+8. DEVELOPMENT SPEED:
+   - No need to design complex schema upfront
+   - Can iterate quickly
+   - Easy to modify structure as needed
+
+
+WHY EXPRESS WAS CHOSEN
+================================================================================
+
+Express.js was chosen for this project for several reasons:
+
+1. MINIMAL AND FLEXIBLE:
+   - Provides essential features without bloat
+   - Easy to understand and learn
+   - Doesn't force specific patterns
+   - Can structure application as needed
+
+2. LARGE ECOSYSTEM:
+   - Huge number of middleware packages available
+   - Well-documented and widely used
+   - Large community support
+   - Easy to find solutions to problems
+
+3. ROUTING:
+   - Simple and intuitive routing system
+   - Supports route parameters and query strings
+   - Easy to organize routes in separate files
+   - Middleware can be applied to specific routes
+
+4. MIDDLEWARE SUPPORT:
+   - Powerful middleware system
+   - Can chain multiple middleware functions
+   - Easy to create custom middleware
+   - Built-in and third-party middleware available
+
+5. JSON HANDLING:
+   - Built-in JSON parsing
+   - Easy to send JSON responses
+   - Perfect for REST API development
+
+6. PERFORMANCE:
+   - Lightweight and fast
+   - Handles concurrent requests well
+   - Good for I/O-bound operations (database, external APIs)
+
+7. INTEGRATION:
+   - Works seamlessly with Node.js
+   - Easy to integrate with MongoDB via Mongoose
+   - Can use any Node.js package
+
+8. SIMPLICITY:
+   - Easy to get started
+   - Clear documentation
+   - Straightforward request/response handling
+   - No complex abstractions
+
+
+SECURITY MEASURES TAKEN
+================================================================================
+
+1. PASSWORD SECURITY:
+   - Passwords never stored in plain text
+   - bcrypt hashing with 10 salt rounds
+   - One-way hashing cannot be reversed
+   - Passwords never logged or returned in responses
+
+2. JWT SECURITY:
+   - Secret key stored in environment variable (JWT_SECRET)
+   - Token expires in 7 days (prevents indefinite access)
+   - Token verified on every protected request
+   - Payload only contains id and email (no sensitive data)
+
+3. CORS SECURITY:
+   - Only allows specified origins (CLIENT_URL)
+   - Prevents unauthorized domains from accessing API
+   - Wildcard '*' only for development, not production
+
+4. INPUT VALIDATION:
+   - express-validator validates email format and password length
+   - Coordinate validation checks for valid numbers
+   - Rating validation enforces 1-5 range
+   - Schema validation in Mongoose models
+
+5. SQL INJECTION PREVENTION:
+   - Using Mongoose (not raw queries)
+   - Mongoose automatically sanitizes inputs
+   - No user input directly in database queries
+   - Parameterized queries by default
+
+6. XSS PREVENTION:
+   - Backend only returns data (no HTML rendering)
+   - Frontend handles XSS prevention
+   - No user-generated HTML stored or rendered
+
+7. ENVIRONMENT VARIABLES:
+   - Sensitive data in .env file (not in code)
+   - .env not committed to version control
+   - env.example provided as template
+   - JWT_SECRET, MONGO_URI, API keys in environment
+
+8. ERROR HANDLING:
+   - Generic error messages to users
+   - Detailed errors logged to console (not exposed)
+   - No stack traces in production responses
+   - Prevents information leakage
+
+9. AUTHENTICATION:
+   - All protected routes require valid JWT
+   - Token verified on every request
+   - No session hijacking (stateless JWT)
+   - Automatic logout on token expiration
+
+10. RATE LIMITING:
+    - TLE refresh has built-in delays
+    - Respects external API rate limits
+    - Could add express-rate-limit for API endpoints in future
+
+
+HOW FRONTEND AND BACKEND COMMUNICATE
+================================================================================
+
+COMMUNICATION METHOD:
+
+The frontend and backend communicate using REST API over HTTP/HTTPS. The frontend makes HTTP requests to backend endpoints, and the backend responds with JSON data.
+
+BASE URL CONFIGURATION:
+
+Frontend configuration (services/api.js):
+- Base URL from VITE_API_BASE_URL environment variable
+- Default: http://localhost:5000/api (development)
+- Production: Set to backend deployment URL
+
+Backend configuration (app.js):
+- Server runs on PORT from environment (default: 5000)
+- All API routes prefixed with /api
+
+AUTHENTICATION FLOW:
+
+1. User logs in via frontend form
+2. Frontend sends POST request to /api/auth/login with email and password
+3. Backend validates credentials and returns JWT token
+4. Frontend stores token in localStorage
+5. Frontend includes token in Authorization header for all subsequent requests
+6. Backend middleware (authMiddleware) verifies token on protected routes
+7. If valid: Request proceeds to controller
+8. If invalid: Returns 401, frontend redirects to login
+
+DATA FLOW EXAMPLE (Satellite Position):
+
+1. Frontend: MapView.jsx calls api.get('/position/43111')
+2. Axios automatically adds Authorization: Bearer <token> header
+3. Request sent to: http://localhost:5000/api/position/43111
+4. Backend: CORS middleware checks origin (allows if in CLIENT_URL)
+5. Backend: JSON parser already processed request (no body for GET)
+6. Backend: Route matcher finds /api/position/:satId route
+7. Backend: predictionController.getRealtimePosition() executes
+8. Backend: Fetches satellite from MongoDB using findSatellite()
+9. Backend: Calculates position using tle.js library
+10. Backend: Calculates orbit path and visibility
+11. Backend: Returns JSON: { currentPosition: {...}, orbitPath: [...] }
+12. Frontend: Receives response, updates React state
+13. Frontend: Re-renders map component with new position
+
+CORS CONFIGURATION:
+
+Backend allows frontend origin via CORS middleware:
+- Checks request origin header
+- Compares with CLIENT_URL environment variable
+- Allows request if origin matches
+- Without CORS, browser would block requests (different origins)
+
+ERROR PROPAGATION:
+
+- Backend errors returned as JSON: { message: "Error text" }
+- Frontend catches errors in try-catch blocks
+- Error messages displayed to user in UI
+- Network errors handled by Axios interceptor
+
+REQUEST/RESPONSE FORMAT:
+
+All requests and responses use JSON format:
+- Request body: JSON object
+- Response body: JSON object
+- Content-Type: application/json
+- Express.json() middleware parses request bodies
+- res.json() sends JSON responses
+
+This REST API architecture provides clear separation between frontend and backend, making the system maintainable and scalable.
+
+================================================================================
+END OF BACKEND VIVA DOCUMENTATION
+================================================================================
+

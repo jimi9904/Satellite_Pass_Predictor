@@ -1,0 +1,91 @@
+1) Objective of the backend  
+Provide REST APIs for an ISRO-focused satellite catalog, pass prediction, real-time position/orbit/visibility checks, simulated telemetry, feedback intake, and user authentication so the React frontend can serve ground-station style insights.
+
+2) Technologies used and why  
+- Node.js (event-driven, great for I/O-heavy API + scheduled fetch tasks).  
+- Express.js (simple routing/middleware for health, auth, catalog, prediction, telemetry, feedback).  
+- MongoDB + Mongoose (document store fits satellite/TLE docs, users, feedback; easy schema validation).  
+- tle.js + suncalc (orbital math, sunrise/sunset context).  
+- node-fetch (call OpenWeather + CelesTrak).  
+- node-cron (daily TLE refresh).  
+- bcrypt + jsonwebtoken + express-validator (secure auth stack).  
+- CORS + dotenv (safe env config, controlled origins).
+
+3) What is Node.js and why used here  
+It is a JavaScript runtime on V8 with non-blocking I/O; ideal for frequently calling external APIs (CelesTrak, OpenWeather) and serving many lightweight prediction/position requests without blocking threads.
+
+4) Express.js and how it is used  
+Express builds the HTTP layer: `app.js` wires middleware (CORS, JSON body), health check, and mounts route modules (satellite, prediction, telemetry, feedback, auth). Each route maps to controller functions for clear separation.
+
+5) Backend architecture  
+Entry `server.js` loads env, connects Mongo, seeds satellites, schedules TLE refresh, then starts Express `app`. Routes → controllers → models → utils. Utils house orbit math (`tleHelper`), visibility logic, seeding, auth middleware, TLE refresh. Tests use in-memory Mongo + mocked tle.js.
+
+6) MongoDB usage  
+Persistent store for three collections: `users`, `satellites`, `feedback`. Mongoose schemas enforce required fields (e.g., TLE lines, unique NORAD IDs, rating bounds) and add timestamps.
+
+7) Database schema and collections  
+- `Satellite`: name, `norad_id` (unique), mission/purpose/launch_year, image_url, `tle_line1/2`, `tle_updated_at`, timestamps.  
+- `User`: email (unique, lowercase, trimmed), `passwordHash`, name, createdAt.  
+- `Feedback`: name, email, message, rating (1–5) with timestamps.
+
+8) JWT authentication and implementation  
+On signup/login, `authController` signs a JWT (id, email) with `JWT_SECRET`, default expiry 7d. `authMiddleware` checks `Authorization: Bearer` or `x-access-token`, verifies the token, and attaches `req.user`; used for `/auth/me` (and ready for other protected routes).
+
+9) Signup, login, logout internals  
+- Signup validates input, rejects duplicate email, hashes password with bcrypt (10 rounds), stores user, then issues JWT + user profile.  
+- Login finds user by email, compares password with bcrypt, returns JWT + profile.  
+- Logout is client-side: the frontend drops the stored token; backend stays stateless.
+
+10) Password hashing and why bcrypt  
+Passwords are never stored raw; bcrypt’s adaptive hashing with salt (10 rounds) protects against rainbow tables and can be tuned for strength.
+
+11) What is TLE (Two-Line Element set)  
+It is a two-line encoded orbital element set describing a satellite’s orbit (inclination, mean motion, etc.), suitable for SGP4 propagation.
+
+12) How TLE data is used  
+Each satellite document stores `tle_line1/2`. `tleHelper` builds TLE strings for tle.js to compute passes, current position, and orbit track. `seedHelper` loads initial TLEs; `tleRefresh` updates them from CelesTrak to keep predictions fresh.
+
+13) What is a satellite pass predictor  
+`computeNextPass` scans 6 hours ahead in 30-second steps for a given observer lat/lon. It finds when elevation crosses the horizon, records start/end, duration, peak elevation, and day/night flag (via SunCalc).
+
+14) How satellite position and orbit are calculated  
+`getCurrentPosition` calls tle.js `getLatLngObj` plus `getSatelliteInfo` for altitude (sanity-checked 100–60,000 km). `getOrbitTrack` samples every 60s over ~100 minutes, normalizing longitudes across the anti-meridian to draw a smooth ground track.
+
+15) How visibility over India is determined  
+`visibilityHelper.isVisibleFromIndia` combines: elevation from India’s center, checks across major city observers, and polygon containment using an India GeoJSON. Any true condition marks `is_visible_from_india=true` with detail breakdown.
+
+16) External APIs integration  
+- OpenWeather in `predictionController` for cloud/visibility/precip to grade pass visibility (Good/Average/Poor).  
+- CelesTrak in `tleRefresh` for bulk active TLEs and per-satellite fallbacks. Both use node-fetch with retries and polite delays.
+
+17) Background jobs (TLE refresh)  
+`scheduleTleRefresh` runs once on startup, then daily at 02:00 Asia/Kolkata via node-cron. It fetches active TLEs, falls back to per-satellite fetch with 500 ms throttling, and updates Mongo `tle_line1/2` + `tle_updated_at`.
+
+18) Caching and why  
+`predictionController` caches position/orbit responses per satellite for 5 seconds in-memory to avoid repeated TLE propagation cost and to stabilize UI polling.
+
+19) API security measures  
+CORS restricts origins from `CLIENT_URL` env; JWT verification protects `/auth/me`; signup validation via express-validator; bcrypt-hashed passwords; rejection when TLE is missing; altitude sanity checks; environment-based secrets.
+
+20) Error handling  
+Controllers wrap logic in try/catch and return meaningful HTTP codes/messages (400 for invalid coords/TLE missing, 401 for auth issues, 404 for missing satellites, 500 otherwise). Weather/TLE fetch failures fall back to neutral visibility or log warnings.
+
+21) Real-world usefulness  
+Enables ground teams or students to fetch current ISRO satellite states, predict passes for a location, view India visibility, and collect user feedback—useful for disaster support demos, STEM labs, or amateur tracking dashboards.
+
+22) Limitations  
+No role-based access or refresh tokens; no rate limiting; caching is in-memory (single-instance only); relies on availability of CelesTrak/OpenWeather; telemetry is simulated, not ingested from hardware; dataset limited to seeded satellites.
+
+23) Future scaling  
+Introduce Redis for shared caching, queue TLE refresh jobs, add WebSockets for live pushes, paginate satellite lists, add rate limiting and monitoring, and containerize/deploy multiple stateless API replicas behind a load balancer; move secrets to a vault.
+
+Common Viva Questions & Answers  
+- Characteristics: RESTful Express API, Mongo-backed TLE catalog, JWT auth, scheduled TLE refresh, weather-aware pass scoring, India visibility checks.  
+- Key features: Satellite list/details, pass prediction, real-time position/orbit, India visibility flag, simulated telemetry, feedback intake, auth endpoints.  
+- Real-life applications: Ground-station planning, disaster monitoring, academic demonstrations of orbit propagation and visibility.  
+- Why important: Keeps indigenous satellite data fresh and makes orbital insights accessible to non-experts via simple APIs.  
+- Problem solved: Simplifies getting up-to-date ISRO satellite passes/positions with visibility hints without manual TLE handling.  
+- Difference vs existing systems: Focused on ISRO set with India-centric visibility logic and built-in weather scoring; lightweight MERN stack instead of heavy ground-station suites.  
+- What makes it unique: Hybrid visibility (elevation + city observers + India polygon), automatic daily TLE refresh, weather-graded predictions delivered through a simple REST layer.  
+- Future scope: Add real telemetry ingestion, notifications for upcoming passes, stronger security (roles/refresh tokens), distributed caching, and richer analytics (footprints, multi-sat overlays).
+
