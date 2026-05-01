@@ -1,93 +1,107 @@
-import { FaGithub, FaTwitter, FaLinkedin } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { FaGithub, FaTwitter, FaLinkedin } from 'react-icons/fa';
 
 const Footer = () => {
   const { t } = useTranslation();
+
+  const cols = [
+    {
+      heading: t('app.footer.about'),
+      items: [
+        { label: t('app.nav.aboutISRO'), to: '/about' },
+        { label: t('app.nav.aboutSatellites'), to: '/satellites' },
+        { label: t('app.nav.feedback'), to: '/feedback' },
+      ]
+    },
+    {
+      heading: t('app.nav.services'),
+      items: [
+        { label: t('app.nav.map'), to: '/map' },
+        { label: t('app.nav.disaster'), to: '/disaster-support' },
+        { label: t('app.nav.selfReliance'), to: '/self-reliance' },
+      ]
+    },
+    {
+      heading: t('app.nav.learning'),
+      items: [
+        { label: t('app.nav.orbits'), to: '/learn/orbits' },
+        { label: t('app.nav.launchVehicles'), to: '/learn/launchers' },
+        { label: t('app.nav.gaganyaan'), to: '/learn/gaganyaan' },
+        { label: t('app.nav.history'), to: '/learn/history' },
+      ]
+    },
+    {
+      heading: t('app.footer.dataSources'),
+      items: [
+        { label: 'Space-Track.org', href: 'https://www.space-track.org' },
+        { label: 'OpenWeather API', href: 'https://openweathermap.org' },
+        { label: 'ISRO Official', href: 'https://www.isro.gov.in' },
+      ]
+    },
+  ];
+
+  const socials = [
+    { icon: FaGithub, href: 'https://github.com', label: 'GitHub' },
+    { icon: FaTwitter, href: 'https://twitter.com', label: 'Twitter' },
+    { icon: FaLinkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
+  ];
+
   return (
-    <footer className="mt-20 border-t border-white/10 bg-white/5 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          {/* About */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <h3 className="text-lg font-bold text-white mb-4">{t('app.footer.about')}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              {t('app.footer.aboutDescription')}
-            </p>
-          </motion.div>
+    <footer style={{ background: '#000', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="container-spacex py-16">
 
-          {/* Data Sources */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <h3 className="text-lg font-bold text-white mb-4">{t('app.footer.dataSources')}</h3>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li>• {t('app.footer.sources.spaceTrack')}</li>
-              <li>• {t('app.footer.sources.openWeather')}</li>
-              <li>• {t('app.footer.sources.isroOfficial')}</li>
-            </ul>
-          </motion.div>
-
-          {/* Social Links */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <h3 className="text-lg font-bold text-white mb-4">{t('app.footer.connect')}</h3>
-            <div className="flex gap-4">
-              <motion.a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 hover:text-cyan-400 transition-colors"
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label="GitHub"
-              >
-                <FaGithub size={24} />
-              </motion.a>
-              <motion.a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 hover:text-cyan-400 transition-colors"
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label="Twitter"
-              >
-                <FaTwitter size={24} />
-              </motion.a>
-              <motion.a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 hover:text-cyan-400 transition-colors"
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label="LinkedIn"
-              >
-                <FaLinkedin size={24} />
-              </motion.a>
+        {/* Top row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-14">
+          {cols.map(({ heading, items }) => (
+            <div key={heading}>
+              <p className="label-text mb-5">{heading}</p>
+              <ul className="space-y-3">
+                {items.map(({ label, to, href }) => (
+                  <li key={label}>
+                    {to ? (
+                      <Link to={to} className="font-condensed text-[0.75rem] uppercase tracking-[0.12em] text-white/55 hover:text-white transition-colors">
+                        {label}
+                      </Link>
+                    ) : (
+                      <a href={href} target="_blank" rel="noopener noreferrer"
+                        className="font-condensed text-[0.75rem] uppercase tracking-[0.12em] text-white/55 hover:text-white transition-colors">
+                        {label}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </motion.div>
+          ))}
         </div>
 
-        {/* Gradient Line */}
-        <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mb-6" />
+        {/* Divider */}
+        <div className="divider-x mb-8" />
 
-        {/* Copyright */}
-        <div className="text-center text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} {t('app.footer.copyright')}</p>
+        {/* Bottom row */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="font-condensed text-[0.65rem] uppercase tracking-[0.18em] text-white/35">
+            © {new Date().getFullYear()} {t('app.footer.copyright')} &nbsp;·&nbsp; 🇮🇳 Made in India
+          </p>
+
+          <div className="flex items-center gap-5">
+            {socials.map(({ icon: Icon, href, label }) => (
+              <motion.a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                className="text-white/25 hover:text-white transition-colors"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Icon size={16} />
+              </motion.a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

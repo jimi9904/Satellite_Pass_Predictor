@@ -1,513 +1,260 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiMenu, HiX, HiChevronDown } from 'react-icons/hi';
+import { HiChevronDown, HiMenu, HiX } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from '../context/AuthContext';
 
-// Modern orbit-style logo SVG
+/* ── SpaceX-style orbit logo ── */
 const OrbitLogo = () => (
-  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="20" cy="20" r="18" stroke="url(#gradient1)" strokeWidth="2" opacity="0.6" />
-    <circle cx="20" cy="20" r="12" stroke="url(#gradient2)" strokeWidth="1.5" opacity="0.4" />
-    <circle cx="20" cy="20" r="6" fill="url(#gradient3)" />
-    <circle cx="20" cy="4" r="3" fill="#7d3cff">
-      <animateTransform
-        attributeName="transform"
-        type="rotate"
-        from="0 20 20"
-        to="360 20 20"
-        dur="20s"
-        repeatCount="indefinite"
-      />
+  <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+    <circle cx="20" cy="20" r="18" stroke="white" strokeWidth="1.5" opacity="0.3" />
+    <circle cx="20" cy="20" r="11" stroke="white" strokeWidth="1" opacity="0.2" />
+    <circle cx="20" cy="20" r="4" fill="white" />
+    <circle cx="20" cy="4" r="2.5" fill="white" opacity="0.9">
+      <animateTransform attributeName="transform" type="rotate"
+        from="0 20 20" to="360 20 20" dur="20s" repeatCount="indefinite" />
     </circle>
-    <defs>
-      <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#7d3cff" />
-        <stop offset="100%" stopColor="#00c6ff" />
-      </linearGradient>
-      <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#00c6ff" />
-        <stop offset="100%" stopColor="#7d3cff" />
-      </linearGradient>
-      <radialGradient id="gradient3">
-        <stop offset="0%" stopColor="#7d3cff" />
-        <stop offset="100%" stopColor="#00c6ff" />
-      </radialGradient>
-    </defs>
   </svg>
 );
-
-// Satyameva Jayate Emblem (Simplified Ashoka Chakra with Lions)
-const SatyamevaJayateEmblem = () => (
-  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Ashoka Chakra - Simplified */}
-    <circle cx="20" cy="20" r="12" fill="none" stroke="#ffb84d" strokeWidth="1.5" />
-    <circle cx="20" cy="20" r="8" fill="none" stroke="#ffb84d" strokeWidth="1" />
-    {/* Spokes */}
-    {[...Array(12)].map((_, i) => {
-      const angle = (i * 30) * Math.PI / 180;
-      const x1 = 20 + 8 * Math.cos(angle);
-      const y1 = 20 + 8 * Math.sin(angle);
-      const x2 = 20 + 12 * Math.cos(angle);
-      const y2 = 20 + 12 * Math.sin(angle);
-      return (
-        <line
-          key={i}
-          x1={x1}
-          y1={y1}
-          x2={x2}
-          y2={y2}
-          stroke="#ffb84d"
-          strokeWidth="1.5"
-        />
-      );
-    })}
-    {/* Center circle */}
-    <circle cx="20" cy="20" r="2" fill="#ffb84d" />
-    {/* Lion silhouette at top (simplified) */}
-    <path
-      d="M 18 8 L 16 10 L 15 12 L 16 14 L 20 13 L 24 14 L 25 12 L 24 10 L 22 8 Z"
-      fill="#ffb84d"
-      opacity="0.8"
-    />
-  </svg>
-);
-
-// Dropdown Component
-const Dropdown = ({ label, items, isOpen, onToggle, children }) => {
-  return (
-    <div className="relative">
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-1 px-3 py-2 text-base font-medium tracking-tight transition-all duration-150 text-slate-300 hover:text-white"
-      >
-        {label}
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <HiChevronDown size={16} />
-        </motion.div>
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 mt-2 min-w-[200px] bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl overflow-hidden z-50"
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
 
 const NavBar = () => {
   const { isAuthenticated, logout } = useAuth();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+
   const language = i18n.language;
-  const switchLanguage = (lang) => {
-    i18n.changeLanguage(lang);
-    localStorage.setItem('language', lang);
-  };
+  const switchLanguage = (lang) => { i18n.changeLanguage(lang); localStorage.setItem('language', lang); };
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [aboutDropdown, setAboutDropdown] = useState(false);
-  const [servicesDropdown, setServicesDropdown] = useState(false);
-  const [learningDropdown, setLearningDropdown] = useState(false);
-  const [mobileDropdowns, setMobileDropdowns] = useState({
-    about: false,
-    services: false,
-    learning: false,
-  });
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  useEffect(() => { setMobileOpen(false); setOpenDropdown(null); }, [location.pathname]);
 
-  const isActiveRoute = (path) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
+  const handleLogout = () => { logout(); navigate('/'); };
 
-  const publicRoutes = ["/login", "/signup"];
-
-  // Close all dropdowns when clicking outside (for mobile)
-  const closeAllDropdowns = () => {
-    setMobileDropdowns({ about: false, services: false, learning: false });
-  };
+  const publicRoutes = ['/', '/login', '/signup'];
+  const isPublic = publicRoutes.includes(location.pathname);
 
   const navItems = [
-    { to: '/', label: t('app.nav.home'), type: 'link' },
+    { to: '/dashboard', label: t('app.nav.home'), type: 'link' },
     {
-      type: 'dropdown',
-      label: t('app.nav.about'),
-      key: 'about',
-      items: [
-        { to: '/about', label: t('app.nav.aboutISRO') },
-        { to: '/satellites', label: t('app.nav.aboutSatellites') },
-      ]
+      type: 'dropdown', label: t('app.nav.about'), key: 'about',
+      items: [{ to: '/about', label: t('app.nav.aboutISRO') }, { to: '/satellites', label: t('app.nav.aboutSatellites') }]
     },
     {
-      type: 'dropdown',
-      label: t('app.nav.services'),
-      key: 'services',
-      items: [
-        { to: '/map', label: t('app.nav.map') },
-        { to: '/disaster-support', label: t('app.nav.disaster') },
-        { to: '/self-reliance', label: t('app.nav.selfReliance') },
-      ]
+      type: 'dropdown', label: t('app.nav.services'), key: 'services',
+      items: [{ to: '/map', label: t('app.nav.map') }, { to: '/disaster-support', label: t('app.nav.disaster') }, { to: '/self-reliance', label: t('app.nav.selfReliance') }]
     },
     {
-      type: 'dropdown',
-      label: t('app.nav.learning'),
-      key: 'learning',
-      items: [
-        { to: '/learn', label: t('app.nav.learning') },
-        { to: '/learn/orbits', label: t('app.nav.orbits') },
-        { to: '/learn/launchers', label: t('app.nav.launchVehicles') },
-        { to: '/learn/gaganyaan', label: t('app.nav.gaganyaan') },
-        { to: '/learn/history', label: t('app.nav.history') },
-      ]
+      type: 'dropdown', label: t('app.nav.learning'), key: 'learning',
+      items: [{ to: '/learn', label: t('app.nav.learning') }, { to: '/learn/orbits', label: t('app.nav.orbits') }, { to: '/learn/launchers', label: t('app.nav.launchVehicles') }, { to: '/learn/gaganyaan', label: t('app.nav.gaganyaan') }, { to: '/learn/history', label: t('app.nav.history') }]
     },
     { to: '/feedback', label: t('app.nav.feedback'), type: 'link' },
   ];
 
   return (
-    <motion.header
-      className="sticky top-0 z-50 bg-white/10 backdrop-blur-xl border-b border-white/20"
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, type: 'spring', damping: 25, stiffness: 200 }}
+    <header
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      style={{
+        background: scrolled ? 'rgba(0,0,0,0.92)' : 'rgba(0,0,0,0.55)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: `1px solid ${scrolled ? 'rgba(255,255,255,0.08)' : 'transparent'}`,
+      }}
     >
-      {/* TOP SECTION */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* LEFT: Logo */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.15 }}
-            className="flex items-center gap-3"
-          >
-            <NavLink to="/" className="flex items-center gap-3">
-              <motion.div
-                whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
-                transition={{ duration: 0.3 }}
-              >
-                <OrbitLogo />
-              </motion.div>
-            </NavLink>
-          </motion.div>
+      <div className="flex items-center justify-between px-6 md:px-10 h-[60px]">
 
-          {/* CENTER: Website Name */}
-          <div className="hidden md:flex items-center justify-center flex-1">
-            <motion.h1
-              className="text-lg md:text-xl font-bold text-white tracking-tight bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              {t('app.title')}
-            </motion.h1>
+        {/* Logo */}
+        <NavLink to="/" className="flex items-center gap-3 shrink-0">
+          <OrbitLogo />
+          <span className="font-condensed font-bold text-white uppercase tracking-[0.12em] text-sm hidden sm:block">
+            Swadeshi Space
+          </span>
+        </NavLink>
+
+        {/* Desktop nav — authenticated only */}
+        {isAuthenticated && !isPublic && (
+          <nav className="hidden lg:flex items-center gap-0">
+            {navItems.map((item) => {
+              if (item.type === 'link') {
+                const active = location.pathname === item.to || (item.to === '/dashboard' && location.pathname === '/dashboard');
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={`relative px-4 py-1 font-condensed text-[0.7rem] uppercase tracking-[0.2em] transition-colors ${active ? 'text-white' : 'text-white/70 hover:text-white'}`}
+                  >
+                    {item.label}
+                    {active && <motion.div layoutId="nav-indicator" className="absolute bottom-0 left-4 right-4 h-[1px] bg-white" />}
+                  </NavLink>
+                );
+              }
+
+              if (item.type === 'dropdown') {
+                const isOpen = openDropdown === item.key;
+                return (
+                  <div key={item.key} className="relative"
+                    onMouseEnter={() => setOpenDropdown(item.key)}
+                    onMouseLeave={() => setOpenDropdown(null)}
+                  >
+                    <button className="flex items-center gap-1 px-4 py-1 font-condensed text-[0.7rem] uppercase tracking-[0.2em] text-white/65 hover:text-white transition-colors">
+                      {item.label}
+                      <HiChevronDown size={12} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 min-w-[180px] pt-2"
+                        >
+                          <div style={{ background: 'rgba(0,0,0,0.96)', border: '1px solid rgba(255,255,255,0.1)' }} className="py-1">
+                            {item.items.map((sub) => (
+                              <NavLink
+                                key={sub.to}
+                                to={sub.to}
+                                className="block px-5 py-3 font-condensed text-[0.65rem] uppercase tracking-[0.18em] text-white/65 hover:text-white hover:bg-white/5 transition-colors"
+                              >
+                                {sub.label}
+                              </NavLink>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </nav>
+        )}
+
+        {/* Right side */}
+        <div className="flex items-center gap-3">
+          {/* Language */}
+          <div className="hidden md:flex items-center gap-0" style={{ border: '1px solid rgba(255,255,255,0.15)' }}>
+            {['en', 'hi'].map((lang) => (
+              <button
+                key={lang}
+                onClick={() => switchLanguage(lang)}
+                className={`px-3 py-1 font-condensed text-[0.6rem] uppercase tracking-[0.18em] transition-all ${language === lang ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+              >
+                {lang}
+              </button>
+            ))}
           </div>
 
-          {/* RIGHT: Emblem + Language Switcher */}
-          <div className="flex items-center gap-3">
-            {/* Satyameva Jayate Emblem */}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              transition={{ duration: 0.2 }}
-              className="hidden md:block"
-            >
-              <SatyamevaJayateEmblem />
-            </motion.div>
-
-            {/* Language Switcher */}
-            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-1">
-              <button
-                onClick={() => switchLanguage('en')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  language === 'en'
-                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => switchLanguage('hi')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  language === 'hi'
-                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                HI
-              </button>
-            </div>
-
-            {/* Mobile Menu Button */}
+          {/* Authenticated: Logout */}
+          {isAuthenticated && !isPublic && (
             <button
-              className="md:hidden p-2 text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={t('app.nav.menuToggle', 'Toggle menu')}
+              onClick={handleLogout}
+              className="hidden lg:block font-condensed text-[0.65rem] uppercase tracking-[0.18em] text-white/55 hover:text-white px-3 py-1 transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.12)' }}
             >
-              <motion.div
-                animate={{ rotate: mobileMenuOpen ? 90 : 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                {mobileMenuOpen ? <HiX size={24} /> : <HiMenu size={24} />}
-              </motion.div>
+              {t('app.nav.logout')}
             </button>
-          </div>
+          )}
+
+          {/* Unauthenticated: Login / Signup */}
+          {!isAuthenticated && (
+            <div className="hidden md:flex items-center gap-2">
+              <NavLink
+                to="/login"
+                className="font-condensed text-[0.65rem] uppercase tracking-[0.18em] text-white/65 hover:text-white px-3 py-1 transition-colors"
+              >
+                {t('app.nav.login')}
+              </NavLink>
+              <NavLink
+                to="/signup"
+                className="font-condensed text-[0.65rem] uppercase tracking-[0.18em] text-black bg-white hover:bg-white/80 px-4 py-1.5 transition-colors"
+              >
+                {t('app.nav.signup')}
+              </NavLink>
+            </div>
+          )}
+
+          {/* Mobile Hamburger */}
+          <button
+            className="lg:hidden text-white/60 hover:text-white p-1 transition-colors"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <HiX size={22} /> : <HiMenu size={22} />}
+          </button>
         </div>
       </div>
 
-      {/* NAVIGATION SECTION (Desktop) */}
-      {isAuthenticated && !publicRoutes.includes(location.pathname) && (
-        <nav className="hidden lg:flex items-center justify-center gap-6 px-4 md:px-8 pb-4 border-t border-white/10 pt-3">
-          {navItems.map((item) => {
-            if (item.type === 'link') {
-              const isActive = isActiveRoute(item.to);
-              return (
-                <NavLink key={item.to} to={item.to} className="relative px-2 py-1">
-                  <motion.span
-                    className={`text-base font-medium tracking-tight transition-all duration-150 ${
-                      isActive ? 'text-white font-semibold' : 'text-slate-300 hover:text-white'
-                    }`}
-                    whileHover={{ scale: 1.03 }}
-                  >
-                    {item.label}
-                  </motion.span>
-                  {isActive && (
-                    <motion.div
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full"
-                      layoutId="nav-active-indicator"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                </NavLink>
-              );
-            }
-
-            if (item.type === 'dropdown') {
-              const isOpen = item.key === 'about' ? aboutDropdown : item.key === 'services' ? servicesDropdown : learningDropdown;
-              const toggleDropdown = () => {
-                if (item.key === 'about') {
-                  setAboutDropdown(!aboutDropdown);
-                  setServicesDropdown(false);
-                  setLearningDropdown(false);
-                } else if (item.key === 'services') {
-                  setServicesDropdown(!servicesDropdown);
-                  setAboutDropdown(false);
-                  setLearningDropdown(false);
-                } else {
-                  setLearningDropdown(!learningDropdown);
-                  setAboutDropdown(false);
-                  setServicesDropdown(false);
-                }
-              };
-
-              return (
-                <Dropdown
-                  key={item.key}
-                  label={item.label}
-                  isOpen={isOpen}
-                  onToggle={toggleDropdown}
-                >
-                  <div className="py-2">
-                    {item.items.map((subItem) => (
-                      <NavLink
-                        key={subItem.to}
-                        to={subItem.to}
-                        onClick={() => {
-                          if (item.key === 'about') setAboutDropdown(false);
-                          else if (item.key === 'services') setServicesDropdown(false);
-                          else setLearningDropdown(false);
-                        }}
-                        className="block px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-all"
-                      >
-                        {subItem.label}
-                      </NavLink>
-                    ))}
-                  </div>
-                </Dropdown>
-              );
-            }
-            return null;
-          })}
-
-          {/* Logout Button (Desktop) */}
-          <button
-            onClick={handleLogout}
-            className="ml-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded-lg transition-all backdrop-blur-sm"
-          >
-            {t('app.nav.logout')}
-          </button>
-        </nav>
-      )}
-
-      {/* MOBILE MENU */}
+      {/* Mobile Menu */}
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {mobileOpen && (
           <motion.div
-            className="lg:hidden border-t border-white/10 bg-white/10 backdrop-blur-xl rounded-2xl mx-4 mb-4 shadow-xl"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden overflow-hidden"
+            style={{ background: 'rgba(0,0,0,0.97)', borderTop: '1px solid rgba(255,255,255,0.08)' }}
           >
-            <nav className="py-4 px-4 space-y-2">
-              {isAuthenticated && !publicRoutes.includes(location.pathname) && (
+            <nav className="px-6 py-4 flex flex-col gap-1">
+              {isAuthenticated && !isPublic ? (
                 <>
-                  {navItems.map((item, index) => {
-                    if (item.type === 'link') {
-                      const isActive = isActiveRoute(item.to);
-                      return (
-                        <motion.div
-                          key={item.to}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.2, delay: index * 0.05 }}
-                        >
-                          <NavLink
-                            to={item.to}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`block px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                              isActive
-                                ? 'bg-white/10 text-white font-semibold border border-white/20'
-                                : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                            }`}
-                          >
-                            {item.label}
+                  {navItems.map((item) => {
+                    if (item.type === 'link') return (
+                      <NavLink key={item.to} to={item.to} className="py-3 font-condensed text-[0.7rem] uppercase tracking-[0.2em] text-white/70 hover:text-white border-b border-white/5 transition-colors">
+                        {item.label}
+                      </NavLink>
+                    );
+                    if (item.type === 'dropdown') return (
+                      <div key={item.key}>
+                        <div className="py-3 font-condensed text-[0.7rem] uppercase tracking-[0.2em] text-white/30 border-b border-white/5">{item.label}</div>
+                        {item.items.map((sub) => (
+                          <NavLink key={sub.to} to={sub.to} className="block pl-4 py-2 font-condensed text-[0.65rem] uppercase tracking-[0.18em] text-white/65 hover:text-white transition-colors">
+                            — {sub.label}
                           </NavLink>
-                        </motion.div>
-                      );
-                    }
-
-                    if (item.type === 'dropdown') {
-                      const isOpen = mobileDropdowns[item.key];
-                      return (
-                        <div key={item.key}>
-                          <button
-                            onClick={() => {
-                              setMobileDropdowns({
-                                ...mobileDropdowns,
-                                [item.key]: !isOpen,
-                              });
-                            }}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                              isActiveRoute(item.items[0]?.to || '')
-                                ? 'bg-white/10 text-white font-semibold border border-white/20'
-                                : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                            }`}
-                          >
-                            {item.label}
-                            <motion.div
-                              animate={{ rotate: isOpen ? 180 : 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <HiChevronDown size={20} />
-                            </motion.div>
-                          </button>
-                          <AnimatePresence>
-                            {isOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="pl-4 space-y-1 mt-2">
-                                  {item.items.map((subItem) => (
-                                    <NavLink
-                                      key={subItem.to}
-                                      to={subItem.to}
-                                      onClick={() => {
-                                        setMobileMenuOpen(false);
-                                        closeAllDropdowns();
-                                      }}
-                                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg transition-all"
-                                    >
-                                      {subItem.label}
-                                    </NavLink>
-                                  ))}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    }
+                        ))}
+                      </div>
+                    );
                     return null;
                   })}
-
-                  {/* Mobile Logout Button */}
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-3 rounded-xl bg-red-500/20 text-red-300 border border-red-500/40 font-medium mt-3 backdrop-blur-sm"
-                  >
+                  <button onClick={() => { handleLogout(); setMobileOpen(false); }}
+                    className="mt-3 py-3 font-condensed text-[0.7rem] uppercase tracking-[0.2em] text-white/60 hover:text-white text-left transition-colors">
                     {t('app.nav.logout')}
                   </button>
                 </>
-              )}
-
-              {/* Login/Signup for non-authenticated */}
-              {!isAuthenticated && (
+              ) : (
                 <>
-                  <NavLink
-                    to="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-3 rounded-xl font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-all"
-                  >
+                  <NavLink to="/login" className="py-3 font-condensed text-[0.7rem] uppercase tracking-[0.2em] text-white/70 hover:text-white border-b border-white/5 transition-colors">
                     {t('app.nav.login')}
                   </NavLink>
-                  <NavLink
-                    to="/signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-3 rounded-xl font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-all"
-                  >
+                  <NavLink to="/signup" className="py-3 font-condensed text-[0.7rem] uppercase tracking-[0.2em] text-white hover:text-white/70 transition-colors">
                     {t('app.nav.signup')}
                   </NavLink>
                 </>
               )}
+              <div className="mt-4 flex gap-0" style={{ border: '1px solid rgba(255,255,255,0.12)', width: 'fit-content' }}>
+                {['en', 'hi'].map((lang) => (
+                  <button key={lang} onClick={() => switchLanguage(lang)}
+                    className={`px-4 py-2 font-condensed text-[0.6rem] uppercase tracking-[0.18em] transition-all ${language === lang ? 'bg-white text-black' : 'text-white/40'}`}>
+                    {lang}
+                  </button>
+                ))}
+              </div>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Login/Signup buttons for desktop when not authenticated */}
-      {!isAuthenticated && !publicRoutes.includes(location.pathname) && (
-        <div className="hidden lg:flex items-center justify-center gap-4 px-4 md:px-8 pb-4 border-t border-white/10 pt-3">
-          <NavLink
-            to="/login"
-            className="px-4 py-2 text-base font-medium text-slate-300 hover:text-white transition-all"
-          >
-            {t('app.nav.login')}
-          </NavLink>
-          <span className="text-slate-500">|</span>
-          <NavLink
-            to="/signup"
-            className="px-4 py-2 text-base font-medium text-slate-300 hover:text-white transition-all"
-          >
-            {t('app.nav.signup')}
-          </NavLink>
-        </div>
-      )}
-    </motion.header>
+    </header>
   );
 };
 
