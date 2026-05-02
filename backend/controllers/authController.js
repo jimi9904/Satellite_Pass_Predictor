@@ -15,7 +15,8 @@ const signup = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { email, password, name } = req.body;
+  let { email, password, name } = req.body;
+  if (email) email = email.toLowerCase().trim();
 
   try {
     const existing = await User.findOne({ email });
@@ -46,7 +47,8 @@ const signup = async (req, res) => {
 
 // ====================== LOGIN ======================
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+  if (email) email = email.toLowerCase().trim();
 
   try {
     const user = await User.findOne({ email });

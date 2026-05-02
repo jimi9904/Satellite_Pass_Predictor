@@ -60,9 +60,9 @@ const Signup = () => {
   };
 
   const fields = [
-    { name: 'name', type: 'text', label: t('app.signup.name'), placeholder: 'Full Name' },
-    { name: 'email', type: 'email', label: t('app.signup.email'), placeholder: 'your@email.com' },
-    { name: 'password', type: 'password', label: t('app.signup.password'), placeholder: '••••••••', minLength: 6 },
+    { name: 'name', type: 'text', label: t('app.signup.name'), placeholder: 'Full Name', autoComplete: 'name' },
+    { name: 'email', type: 'email', label: t('app.signup.email'), placeholder: 'your@email.com', autoComplete: 'email' },
+    { name: 'password', type: 'password', label: t('app.signup.password'), placeholder: '••••••••', minLength: 6, autoComplete: 'new-password' },
   ];
 
   return (
@@ -107,7 +107,7 @@ const Signup = () => {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-0">
-            {fields.map(({ name, type, label, placeholder, minLength }, i) => (
+            {fields.map(({ name, type, label, placeholder, minLength, autoComplete }, i) => (
               <div
                 key={name}
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}
@@ -124,6 +124,7 @@ const Signup = () => {
                   placeholder={placeholder}
                   required
                   minLength={minLength}
+                  autoComplete={autoComplete}
                   className="w-full bg-transparent text-white text-base pb-4 border-none outline-none focus:outline-none"
                   style={{ caretColor: 'white' }}
                 />

@@ -117,6 +117,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="your@email.com"
                 required
+                autoComplete="email"
                 className="w-full bg-transparent text-white text-base pb-4 border-none outline-none focus:outline-none"
                 style={{ caretColor: 'white' }}
               />
@@ -134,6 +135,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
                 className="w-full bg-transparent text-white text-base pb-4 border-none outline-none focus:outline-none"
                 style={{ caretColor: 'white' }}
               />
