@@ -73,7 +73,7 @@ const NavBar = () => {
       <div className="flex items-center justify-between px-6 md:px-10 h-[60px]">
 
         {/* Logo */}
-        <NavLink to="/" className="flex items-center gap-3 shrink-0">
+        <NavLink to={isAuthenticated && !isPublic ? "/dashboard" : "/"} className="flex items-center gap-3 shrink-0">
           <OrbitLogo />
           <span className="font-condensed font-bold text-white uppercase tracking-[0.12em] text-sm hidden sm:block">
             Swadeshi Space
