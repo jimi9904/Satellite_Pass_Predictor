@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { HiArrowLeft, HiCode } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 import { GiRingedPlanet } from 'react-icons/gi';
+import { FaSatellite, FaGlobeAmericas, FaMapMarkerAlt, FaCloudSun } from 'react-icons/fa';
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
@@ -12,32 +13,48 @@ const fadeUp = (delay = 0) => ({
 
 const orbitTopics = [
   {
-    title: 'Low Earth Orbit (LEO)',
+    title: 'Low Earth Orbit',
+    abbr: 'LEO',
     color: '#06b6d4',
     altitude: '160 – 2,000 km',
-    description: 'The closest orbit to Earth, taking about 90 minutes to complete one revolution. This is where most remote sensing, weather, and military observation satellites fly because of the high resolution possible. The International Space Station also orbits here.',
-    satellites: ['Cartosat Series', 'RISAT Series', 'EOS Satellites'],
+    period: '~90 minutes',
+    speed: '28,000 km/h',
+    icon: FaGlobeAmericas,
+    description: 'The closest operational orbit to Earth. Because satellites in LEO are so close to the surface, they travel incredibly fast to avoid being pulled back down by gravity. This proximity makes LEO perfect for high-resolution Earth observation, spy satellites, and the International Space Space (ISS). However, because they are so low, a single LEO satellite can only see a small patch of the Earth at a time.',
+    satellites: ['Cartosat Series (Mapping)', 'RISAT Series (Radar)', 'SpaceX Starlink'],
   },
   {
-    title: 'Medium Earth Orbit (MEO)',
+    title: 'Medium Earth Orbit',
+    abbr: 'MEO',
     color: '#3b82f6',
     altitude: '2,000 – 35,000 km',
-    description: 'Situated between LEO and GEO. Satellites here take 2 to 24 hours to orbit Earth. This region is primarily used for navigation satellite systems because it offers a good compromise between coverage area and signal strength.',
-    satellites: ['GPS', 'Galileo'],
+    period: '2 to 24 hours',
+    speed: '14,000 km/h',
+    icon: FaMapMarkerAlt,
+    description: 'Situated in the vast space between LEO and GEO. MEO is the sweet spot for global navigation satellite systems (GNSS). Satellites here are high enough to cover large areas of the globe at once, but low enough that the signal delay isn\'t too extreme for GPS receivers in our phones.',
+    satellites: ['Global Positioning System (GPS)', 'Galileo (Europe)', 'GLONASS (Russia)'],
   },
   {
-    title: 'Geostationary Orbit (GEO)',
+    title: 'Geosynchronous / Geostationary Orbit',
+    abbr: 'GEO',
     color: '#8b5cf6',
     altitude: '35,786 km',
-    description: 'An orbit right above the equator where the satellite revolves at exactly the same speed as the Earth rotates. This makes the satellite appear stationary from the ground — ideal for direct-to-home TV and broadband communication.',
-    satellites: ['INSAT Series', 'GSAT Series', 'NavIC (some)'],
+    period: '23h 56m 4s',
+    speed: '11,000 km/h',
+    icon: FaSatellite,
+    description: 'A magical altitude where the satellite\'s orbital speed perfectly matches the Earth\'s rotation. If placed directly above the equator (Geostationary), the satellite appears to hover motionless in the sky. This is why your home satellite TV dish points to one fixed spot in the sky and never has to move.',
+    satellites: ['INSAT Series (Weather/Comms)', 'GSAT Series (Broadband)', 'NavIC (IRNSS)'],
   },
   {
-    title: 'Sun Synchronous Orbit (SSO)',
+    title: 'Sun Synchronous Orbit',
+    abbr: 'SSO',
     color: '#f59e0b',
     altitude: '600 – 800 km',
-    description: 'A special polar orbit (over the north and south poles) where the satellite passes over any given point of the planet\'s surface at the same local solar time. This ensures consistent lighting conditions for Earth observation cameras.',
-    satellites: ['Oceansat', 'Resourcesat'],
+    period: '~100 minutes',
+    speed: '27,000 km/h',
+    icon: FaCloudSun,
+    description: 'A specialized near-polar Low Earth Orbit. A satellite in SSO passes over any given point of the Earth\'s surface at exactly the same local solar time every day. This means shadows cast by mountains or buildings look exactly the same in every photo, making it the ultimate orbit for comparing changes on the ground over time.',
+    satellites: ['Oceansat (Ocean color)', 'Resourcesat (Agriculture)', 'Landsat'],
   }
 ];
 
@@ -88,39 +105,106 @@ const Orbits = () => {
           </p>
         </motion.div>
 
-        {/* Orbits Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-16">
-          {orbitTopics.map((orbit, index) => (
-            <motion.div
-              key={orbit.title}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="rounded-3xl border border-white/10 hover:border-white/25 transition-all duration-300 overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.03)' }}
-            >
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-white">{orbit.title}</h3>
-                  <span className="text-xs font-black px-3 py-1 rounded-full border" style={{ color: orbit.color, background: `${orbit.color}15`, borderColor: `${orbit.color}40` }}>
-                    {orbit.altitude}
-                  </span>
-                </div>
-                <p className="text-slate-300 text-sm leading-relaxed mb-6">{orbit.description}</p>
-                
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-3">Typical Satellites</p>
-                  <div className="flex flex-wrap gap-2">
-                    {orbit.satellites.map(sat => (
-                      <span key={sat} className="px-3 py-1 rounded-md text-xs font-medium text-slate-300 bg-white/5 border border-white/10">
-                        {sat}
+        {/* Comparison Table */}
+        <motion.div {...fadeUp(0.1)} className="rounded-2xl border border-white/10 overflow-hidden mb-14">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <th className="text-left px-5 py-4 text-xs uppercase tracking-widest text-slate-400 font-bold">Orbit Type</th>
+                  <th className="text-left px-5 py-4 text-xs uppercase tracking-widest text-slate-400 font-bold">Altitude</th>
+                  <th className="text-left px-5 py-4 text-xs uppercase tracking-widest text-slate-400 font-bold">Orbital Period</th>
+                  <th className="text-left px-5 py-4 text-xs uppercase tracking-widest text-slate-400 font-bold">Orbital Speed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orbitTopics.map((o) => (
+                  <tr
+                    key={o.title}
+                    className="border-t border-white/5 hover:bg-white/3 transition-colors"
+                  >
+                    <td className="px-5 py-4">
+                      <span className="font-black text-white">{o.abbr}</span>
+                      <span className="ml-2 text-xs text-slate-500">{o.title}</span>
+                    </td>
+                    <td className="px-5 py-4 text-slate-300">{o.altitude}</td>
+                    <td className="px-5 py-4 text-slate-300">{o.period}</td>
+                    <td className="px-5 py-4">
+                      <span
+                        className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                        style={{ background: `${o.color}20`, color: o.color }}
+                      >
+                        {o.speed}
                       </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+
+        {/* Orbit Detail Cards (Stacked Layout) */}
+        <div className="space-y-8 mb-16">
+          {orbitTopics.map((o, index) => {
+            const Icon = o.icon;
+            return (
+              <motion.div
+                key={o.abbr}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 overflow-hidden"
+                style={{ background: 'rgba(255,255,255,0.04)' }}
+              >
+                {/* Top color bar */}
+                <div className="h-1" style={{ background: `linear-gradient(90deg, ${o.color}, ${o.color}44)` }} />
+
+                <div className="p-7">
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                        style={{ background: `${o.color}22` }}>
+                        <Icon size={22} style={{ color: o.color }} />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-white">{o.abbr}</h3>
+                        <p className="text-xs text-slate-500 uppercase tracking-widest mt-0.5">{o.title}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Specs row */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                    {[
+                      { label: 'Altitude Range', value: o.altitude },
+                      { label: 'Orbital Period', value: o.period },
+                      { label: 'Avg Speed', value: o.speed },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                        <p className="text-xs text-slate-500 mb-1">{label}</p>
+                        <p className="text-sm text-white font-bold">{value}</p>
+                      </div>
                     ))}
                   </div>
+
+                  <p className="text-slate-400 text-sm leading-relaxed mb-6">{o.description}</p>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-widest font-bold mb-3" style={{ color: o.color }}>Famous Satellites</p>
+                    <div className="flex flex-wrap gap-2">
+                      {o.satellites.map((sat) => (
+                        <span key={sat} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 bg-white/5 border border-white/10 flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: o.color }} />
+                          {sat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Behind the Scenes (TLE/SGP4) */}
