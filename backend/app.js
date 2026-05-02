@@ -9,19 +9,25 @@ const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
+const PRODUCTION_ORIGINS = [
+  'https://satellitepasspredictor.vercel.app',
+];
+
 const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((item) => item.trim())
-  : ['*'];
+  ? [...process.env.CLIENT_URL.split(',').map((o) => o.trim()), ...PRODUCTION_ORIGINS]
+  : ['http://localhost:5173', 'http://localhost:5175', ...PRODUCTION_ORIGINS];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      // Allow server-to-server requests (no origin) or listed origins
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Origin not allowed by CORS'));
+        callback(new Error(`CORS: origin ${origin} not allowed`));
       }
     },
+    credentials: true,
   })
 );
 
